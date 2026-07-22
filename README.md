@@ -3,9 +3,10 @@ title: Hybrid Face Recognition System
 emoji: 👤
 colorFrom: indigo
 colorTo: blue
-sdk: docker
+sdk: gradio
+sdk_version: 4.44.0
+app_file: gradio_app.py
 pinned: false
-app_port: 7860
 ---
 
 # Hybrid Face Recognition System
@@ -15,19 +16,19 @@ app_port: 7860
 
 ---
 
-## Deploy on Hugging Face Spaces
+## Deploy on Hugging Face Spaces (free path)
+
+Docker Spaces are **paid**. Use **Gradio** instead (free accounts may get up to 2 ZeroGPU Spaces).
 
 1. Go to [huggingface.co/new-space](https://huggingface.co/new-space)
-2. **Space name:** e.g. `HybridFaceRecognitionSystem`
-3. **SDK:** Docker
-4. **Hardware:** CPU basic (free)
-5. Create the Space, then open **Settings → Connected GitHub repository** and link  
-   `SyedAsif7/HybridFaceRecognitionSystem`  
-   *(or push this repo into the Space git remote)*
-6. Wait for the build (TensorFlow install can take 5–15 min)
-7. Open the Space URL and use **Upload image** for recognition
+2. **SDK:** Gradio (not Docker)
+3. **Hardware:** ZeroGPU if shown (free tier), otherwise try CPU if your account allows it
+4. Create the Space, then upload/push this repo **or** connect GitHub:  
+   `SyedAsif7/HybridFaceRecognitionSystem`
+5. Entry file is `gradio_app.py` (set in README frontmatter as `app_file`)
+6. Wait for the build, then open the Space URL
 
-**Note:** Server webcam is not available on Spaces — use image upload or browser camera capture.
+If Gradio also asks for PRO, Hugging Face free compute is not available on your account — use a free VM instead (Oracle Always Free) or demo locally with a tunnel.
 
 ---
 
