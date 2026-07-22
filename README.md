@@ -1,7 +1,33 @@
+---
+title: Hybrid Face Recognition System
+emoji: 👤
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # Hybrid Face Recognition System
 ### SSIEMS Parbhani — M.Tech Research Project
 **Based on:** Panchalwar Mam's Implementation Paper
 *"Implementation of Hybrid Deep Learning-Based Face Recognition Using SIFT-CNN Integration"*
+
+---
+
+## Deploy on Hugging Face Spaces
+
+1. Go to [huggingface.co/new-space](https://huggingface.co/new-space)
+2. **Space name:** e.g. `HybridFaceRecognitionSystem`
+3. **SDK:** Docker
+4. **Hardware:** CPU basic (free)
+5. Create the Space, then open **Settings → Connected GitHub repository** and link  
+   `SyedAsif7/HybridFaceRecognitionSystem`  
+   *(or push this repo into the Space git remote)*
+6. Wait for the build (TensorFlow install can take 5–15 min)
+7. Open the Space URL and use **Upload image** for recognition
+
+**Note:** Server webcam is not available on Spaces — use image upload or browser camera capture.
 
 ---
 

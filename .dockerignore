@@ -1,0 +1,17 @@
+.git
+.keras
+__pycache__
+*.pyc
+.env
+venv
+env
+*.h5
+facenet_keras_weights.h5
+weights/*.h5
+data/raw
+static/uploads/*
+!static/uploads/.gitkeep
+.vscode
+.idea
+*.md
+!README.md
