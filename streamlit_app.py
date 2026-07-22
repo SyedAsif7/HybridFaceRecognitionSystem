@@ -29,175 +29,156 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Keep CSS minimal — heavy BaseWeb overrides cause text overlap on Streamlit Cloud
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&display=swap');
 
 :root {
-  --bg: #e8eef1;
-  --card: #ffffff;
-  --ink: #12202a;
-  --mute: #5a6b75;
-  --line: #cfd9df;
-  --teal: #0a4f44;
-  --soft: #e7f2ef;
-  --ok: #0d6b5c;
-  --warn: #9a6b12;
-  --bad: #a33a3a;
+  --ink: #14242c;
+  --mute: #5d6e77;
+  --line: #d0dbe1;
+  --bg: #edf2f4;
+  --panel: #ffffff;
+  --teal: #0b5f52;
+  --teal-soft: #e6f3ef;
+  --ok: #0b5f52;
+  --warn: #8f6a14;
+  --bad: #9b3535;
+}
+
+html, body, .stApp {
+  font-family: 'Nunito Sans', sans-serif;
+  color: var(--ink);
 }
 
 .stApp {
-  background: var(--bg);
-  font-family: 'DM Sans', sans-serif;
-  color: var(--ink);
+  background:
+    radial-gradient(800px 380px at 0% 0%, #d7e6e8 0%, transparent 55%),
+    radial-gradient(700px 340px at 100% 0%, #dce8e2 0%, transparent 50%),
+    var(--bg);
 }
 
 section[data-testid="stSidebar"] { display: none !important; }
 
-.block-container {
-  max-width: 980px !important;
-  padding-top: 2.5rem !important;
+div.block-container {
+  max-width: 1000px !important;
+  padding-top: 1.75rem !important;
   padding-bottom: 3rem !important;
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
 }
 
-/* Custom content only — never restyle Streamlit tab/radio internals */
-.ui-card {
-  background: var(--card);
+/* Only style our markup — leave Streamlit widgets alone */
+.hero {
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 1.35rem 1.4rem;
-  margin: 0 0 1.15rem 0;
-  position: relative;
-  z-index: 1;
-  overflow: visible;
+  border-radius: 10px;
+  padding: 1.5rem 1.6rem 1.35rem;
+  margin-bottom: 1.25rem;
 }
-.ui-title {
+.hero-title {
   margin: 0;
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.25;
-  color: var(--ink);
-}
-.ui-byline {
-  margin: 0.65rem 0 0 0;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  color: var(--mute);
-}
-.ui-byline a {
-  color: #1c3d4f;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.ui-lead {
-  margin: 0.85rem 0 0 0;
-  font-size: 1rem;
-  line-height: 1.55;
-  color: var(--mute);
-}
-.ui-stats {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
-}
-.ui-stat {
-  min-width: 5.5rem;
-}
-.ui-stat b {
-  display: block;
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.5rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.75rem, 3vw, 2.15rem);
   font-weight: 700;
   line-height: 1.2;
   color: var(--ink);
 }
-.ui-stat span {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--mute);
-  line-height: 1.3;
-}
-.ui-h {
-  margin: 0 0 0.4rem 0;
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.35rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--ink);
-}
-.ui-p {
-  margin: 0 0 1rem 0;
+.hero-by {
+  margin: 0.55rem 0 0;
   font-size: 0.95rem;
   line-height: 1.5;
   color: var(--mute);
 }
-.ui-label {
-  display: block;
-  margin: 0 0 0.5rem 0;
-  font-size: 0.8rem;
+.hero-by a {
+  color: var(--teal);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #1c3d4f;
-  line-height: 1.3;
+  text-decoration: none;
 }
-.ui-box {
-  background: #f7fafb;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 1rem;
-  margin-top: 0.75rem;
+.hero-by a:hover { text-decoration: underline; }
+.hero-desc {
+  margin: 0.75rem 0 0;
+  max-width: 40rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--mute);
 }
-.ui-name {
-  margin: 0 0 0.75rem 0;
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1.5rem;
+.hero-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+.chip {
+  background: var(--teal-soft);
+  border: 1px solid #c5ddd6;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--teal);
+  line-height: 1.2;
+}
+
+.sec-title {
+  margin: 0.25rem 0 0.35rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.4rem;
   font-weight: 700;
   line-height: 1.25;
 }
-.ui-line {
-  margin: 0 0 0.4rem 0;
+.sec-help {
+  margin: 0 0 1.1rem;
   font-size: 0.95rem;
-  line-height: 1.45;
-}
-.ui-line span { color: var(--mute); margin-right: 0.4rem; }
-.ok { color: var(--ok); font-weight: 700; }
-.warn { color: var(--warn); font-weight: 700; }
-.bad { color: var(--bad); font-weight: 700; }
-.ui-soft {
-  margin: 0.5rem 0 0 0;
-  font-size: 0.9rem;
   line-height: 1.5;
   color: var(--mute);
 }
-.ui-person {
-  margin: 0.6rem 0 0.15rem 0;
-  font-family: 'Source Serif 4', Georgia, serif;
+.panel-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal);
+  line-height: 1.3;
+}
+.result-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem 1.05rem;
+  margin-top: 0.75rem;
+}
+.result-name {
+  margin: 0 0 0.65rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.result-line {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+.result-line .k { color: var(--mute); margin-right: 0.35rem; }
+.ok { color: var(--ok); font-weight: 800; }
+.warn { color: var(--warn); font-weight: 800; }
+.bad { color: var(--bad); font-weight: 800; }
+.person-name {
+  margin: 0.55rem 0 0.15rem;
+  font-family: 'Fraunces', Georgia, serif;
   font-size: 1.1rem;
   font-weight: 700;
   line-height: 1.3;
 }
-.ui-meta {
+.person-meta {
   margin: 0;
   font-size: 0.85rem;
   line-height: 1.4;
   color: var(--mute);
 }
-.ui-note {
-  margin: 1.25rem 0 0 0;
+.foot {
+  margin-top: 1.25rem;
   padding-top: 0.9rem;
   border-top: 1px solid var(--line);
   font-size: 0.85rem;
@@ -207,13 +188,15 @@ section[data-testid="stSidebar"] { display: none !important; }
 
 div[data-testid="stImage"] img {
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 8px;
 }
 .stButton > button[kind="primary"] {
   background: var(--teal) !important;
   border-color: var(--teal) !important;
   color: #fff !important;
-  font-weight: 650 !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  min-height: 2.75rem !important;
 }
 </style>
 """,
@@ -365,65 +348,84 @@ def tone(found: bool, level: str) -> str:
 faces_map = load_face_index().get("registered_faces", {})
 n_faces = len(faces_map)
 
+# ── Header ────────────────────────────────────────────────
 st.markdown(
     f"""
-    <div class="ui-card">
-      <h1 class="ui-title">Hybrid Face Recognition</h1>
-      <p class="ui-byline">
+    <div class="hero">
+      <h1 class="hero-title">Hybrid Face Recognition</h1>
+      <p class="hero-by">
         Made by <strong>Syed Asif</strong> ·
         <a href="https://www.linkedin.com/in/the-syed-asif" target="_blank" rel="noopener noreferrer">LinkedIn</a>
         ·
         <a href="https://github.com/SyedAsif7" target="_blank" rel="noopener noreferrer">GitHub</a>
       </p>
-      <p class="ui-lead">
-        Align a face, fuse SIFT + HOG + Gabor features, and match it to your gallery
-        with a confidence score.
+      <p class="hero-desc">
+        Upload a photo, align the face, fuse SIFT + HOG + Gabor features,
+        and match against your enrolled gallery.
       </p>
-      <div class="ui-stats">
-        <div class="ui-stat"><b>{n_faces}</b><span>Enrolled</span></div>
-        <div class="ui-stat"><b>{MATCH_THRESHOLD:.0f}%</b><span>Threshold</span></div>
-        <div class="ui-stat"><b>3</b><span>Features</span></div>
+      <div class="hero-row">
+        <div class="chip">{n_faces} enrolled</div>
+        <div class="chip">{MATCH_THRESHOLD:.0f}% threshold</div>
+        <div class="chip">SIFT · HOG · Gabor</div>
       </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# selectbox avoids Streamlit tab CSS overlap bugs
-page = st.selectbox(
-    "Section",
-    ["Recognize", "Register", "Gallery"],
-    index=0,
-)
+# Prefer segmented control when available (Streamlit ≥ 1.44)
+try:
+    page = st.segmented_control(
+        "Choose a section",
+        options=["Recognize", "Register", "Gallery"],
+        default="Recognize",
+        label_visibility="collapsed",
+        key="nav",
+    )
+    if page is None:
+        page = "Recognize"
+except Exception:
+    page = st.radio(
+        "Choose a section",
+        ["Recognize", "Register", "Gallery"],
+        horizontal=True,
+        key="nav_radio",
+    )
 
+st.write("")  # breathing room
+
+# ── Recognize ─────────────────────────────────────────────
 if page == "Recognize":
     st.markdown(
-        '<p class="ui-h">Recognize a face</p>'
-        '<p class="ui-p">Upload or capture one clear frontal photo, then run matching.</p>',
+        '<p class="sec-title">Recognize</p>'
+        '<p class="sec-help">Step 1: add a face photo. Step 2: run recognition. Step 3: see the match.</p>',
         unsafe_allow_html=True,
     )
-    left, right = st.columns(2, gap="large")
+
+    left, right = st.columns([1.05, 1], gap="large")
 
     with left:
-        st.markdown('<span class="ui-label">Input</span>', unsafe_allow_html=True)
+        st.markdown('<p class="panel-title">1 · Add photo</p>', unsafe_allow_html=True)
         source = st.radio(
-            "Image source",
-            ["Upload image", "Camera"],
+            "How do you want to add a photo?",
+            ["Upload image", "Use camera"],
             horizontal=True,
             key="src",
         )
+
         image_bgr = None
         if source == "Upload image":
             up = st.file_uploader(
-                "Face image",
+                "Choose a clear face image",
                 type=["jpg", "jpeg", "png", "bmp", "webp"],
                 key="up",
+                help="JPG, PNG, BMP, or WEBP — one face works best.",
             )
             if up is not None:
                 image_bgr = bytes_to_bgr(up.getvalue())
                 st.image(up.getvalue(), use_container_width=True)
         else:
-            cam = st.camera_input("Camera photo", key="cam")
+            cam = st.camera_input("Take a photo", key="cam")
             if cam is not None:
                 image_bgr = bytes_to_bgr(cam.getvalue())
 
@@ -434,11 +436,14 @@ if page == "Recognize":
             disabled=image_bgr is None,
             key="go",
         )
+        if image_bgr is None:
+            st.caption("Add a photo to enable recognition.")
 
     with right:
-        st.markdown('<span class="ui-label">Result</span>', unsafe_allow_html=True)
+        st.markdown('<p class="panel-title">2 · Match result</p>', unsafe_allow_html=True)
+
         if go and image_bgr is not None:
-            with st.spinner("Matching face…"):
+            with st.spinner("Aligning face and matching…"):
                 result = recognize(image_bgr)
             st.session_state["result"] = result
             append_history(
@@ -455,43 +460,53 @@ if page == "Recognize":
 
         result = st.session_state.get("result")
         if not result:
-            st.info("Your match result will appear here after recognition.")
+            st.info("Results show here after you run recognition.")
         else:
             aligned = (result["aligned"] * 255).astype(np.uint8)
             cls = tone(result["found"], result["level"])
-            st.image(aligned, caption="Aligned face", use_container_width=True, clamp=True)
+            st.image(aligned, caption="Aligned face crop", use_container_width=True, clamp=True)
+            st.progress(min(1.0, max(0.0, float(result["confidence"]) / 100.0)))
             st.markdown(
                 f"""
-                <div class="ui-box">
-                  <p class="ui-name">{html.escape(str(result['label']))}</p>
-                  <p class="ui-line">
-                    <span>Confidence</span>
-                    <b class="{cls}">{result['confidence']:.1f}% · {html.escape(result['level'])}</b>
+                <div class="result-box">
+                  <p class="result-name">{html.escape(str(result['label']))}</p>
+                  <p class="result-line">
+                    <span class="k">Confidence</span>
+                    <span class="{cls}">{result['confidence']:.1f}% · {html.escape(result['level'])}</span>
                   </p>
-                  <p class="ui-line"><span>Method</span><b>SIFT + HOG + Gabor</b></p>
-                  <p class="ui-soft">{html.escape(str(result.get('detail', '')))}</p>
+                  <p class="result-line"><span class="k">Method</span>SIFT + HOG + Gabor</p>
+                  <p class="result-line" style="color:var(--mute);margin-top:0.55rem;">
+                    {html.escape(str(result.get('detail', '')))}
+                  </p>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
+# ── Register ──────────────────────────────────────────────
 elif page == "Register":
     st.markdown(
-        '<p class="ui-h">Register a person</p>'
-        '<p class="ui-p">Add a name and one or more clear face images.</p>',
+        '<p class="sec-title">Register</p>'
+        '<p class="sec-help">Enroll a new person so they can be recognized later.</p>',
         unsafe_allow_html=True,
     )
+
     c1, c2 = st.columns(2, gap="large")
     with c1:
-        st.markdown('<span class="ui-label">Details</span>', unsafe_allow_html=True)
-        name = st.text_input("Full name", placeholder="e.g. Alex Lacamoire", key="name")
+        st.markdown('<p class="panel-title">Person details</p>', unsafe_allow_html=True)
+        name = st.text_input(
+            "Full name",
+            placeholder="e.g. Alex Lacamoire",
+            key="name",
+            help="This name appears in recognition results.",
+        )
         files = st.file_uploader(
-            "Face images",
+            "Face images (one or more)",
             type=["jpg", "jpeg", "png", "bmp", "webp"],
             accept_multiple_files=True,
             key="files",
         )
-        shot = st.camera_input("Optional camera photo", key="regcam")
+        shot = st.camera_input("Or capture one photo now", key="regcam")
 
     images: list[np.ndarray] = []
     if files:
@@ -505,11 +520,11 @@ elif page == "Register":
             images.append(img)
 
     with c2:
-        st.markdown('<span class="ui-label">Preview</span>', unsafe_allow_html=True)
+        st.markdown('<p class="panel-title">Preview</p>', unsafe_allow_html=True)
         if not images:
-            st.info("Previews appear here after upload.")
+            st.info("Upload or capture photos to preview them here.")
         else:
-            st.caption(f"{len(images)} image(s) ready")
+            st.success(f"{len(images)} image(s) ready to save")
             cols = st.columns(min(3, len(images)))
             for i, img in enumerate(images[:6]):
                 cols[i % len(cols)].image(
@@ -517,8 +532,9 @@ elif page == "Register":
                     use_container_width=True,
                 )
 
-    if st.button("Save to gallery", type="primary", use_container_width=True, key="save"):
-        with st.spinner("Saving…"):
+    saved = st.button("Save to gallery", type="primary", use_container_width=True, key="save")
+    if saved:
+        with st.spinner("Building face encoding…"):
             ok, msg = register_person(name, images)
         if ok:
             st.success(msg)
@@ -528,19 +544,21 @@ elif page == "Register":
             st.error(msg)
 
     st.markdown(
-        '<p class="ui-note">On Streamlit Cloud, new enrollments may reset when the app sleeps. '
-        "Commit updated <code>Faces/</code> files to GitHub to keep them.</p>",
+        '<p class="foot">Tip: on Streamlit Cloud, enrollments may reset when the app sleeps. '
+        "Commit updated <code>Faces/</code> files to GitHub to keep them permanently.</p>",
         unsafe_allow_html=True,
     )
 
+# ── Gallery ───────────────────────────────────────────────
 else:
     st.markdown(
-        '<p class="ui-h">Enrolled gallery</p>'
-        '<p class="ui-p">People currently available for recognition.</p>',
+        '<p class="sec-title">Gallery</p>'
+        '<p class="sec-help">Everyone currently enrolled for recognition.</p>',
         unsafe_allow_html=True,
     )
+
     if not faces_map:
-        st.info("No faces yet. Open Register to add someone.")
+        st.warning("No faces enrolled yet. Go to Register to add the first person.")
     else:
         people = [faces_map[k] for k in sorted(faces_map.keys(), key=lambda x: int(x))]
         for start in range(0, len(people), 3):
@@ -549,11 +567,12 @@ else:
                 folder = ROOT / person.get("directory", "")
                 photos = sorted(folder.glob("*.jpg")) if folder.exists() else []
                 with col:
-                    if photos:
-                        st.image(str(photos[0]), use_container_width=True)
-                    st.markdown(
-                        f'<p class="ui-person">{html.escape(str(person["name"]))}</p>'
-                        f'<p class="ui-meta">ID {html.escape(str(person["id"]))} · '
-                        f'{int(person["num_images"])} image(s)</p>',
-                        unsafe_allow_html=True,
-                    )
+                    with st.container(border=True):
+                        if photos:
+                            st.image(str(photos[0]), use_container_width=True)
+                        st.markdown(
+                            f'<p class="person-name">{html.escape(str(person["name"]))}</p>'
+                            f'<p class="person-meta">ID {html.escape(str(person["id"]))} · '
+                            f'{int(person["num_images"])} image(s)</p>',
+                            unsafe_allow_html=True,
+                        )
