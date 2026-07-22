@@ -7,6 +7,22 @@ Face Detection → Eye-Landmark Alignment → Rotation → Crop → Resize → N
 import cv2
 import numpy as np
 import os
+from pathlib import Path
+
+_CASCADE_DIR = Path(__file__).resolve().parents[2] / "data" / "haarcascades"
+
+
+def _cascade_path(filename: str) -> str:
+    """Prefer bundled cascades (Cloud-safe); fall back to cv2.data when present."""
+    bundled = _CASCADE_DIR / filename
+    if bundled.exists():
+        return str(bundled)
+    data = getattr(cv2, "data", None)
+    if data is not None and hasattr(data, "haarcascades"):
+        return os.path.join(data.haarcascades, filename)
+    raise FileNotFoundError(
+        f"Haar cascade not found: {filename}. Expected at {_CASCADE_DIR}"
+    )
 
 
 def detect_and_align_face(image, target_size=(128, 128)):
@@ -18,8 +34,17 @@ def detect_and_align_face(image, target_size=(128, 128)):
       4. Compute eye-centre angle → rotate for alignment
       5. Crop aligned face → resize → normalize [0,1]
     """
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    eye_cascade  = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+    if not hasattr(cv2, "CascadeClassifier"):
+        raise RuntimeError(
+            f"OpenCV build missing CascadeClassifier (cv2 {getattr(cv2, '__version__', '?')}). "
+            "Install opencv-python-headless<5."
+        )
+
+    face_cascade = cv2.CascadeClassifier(_cascade_path("haarcascade_frontalface_default.xml"))
+    eye_cascade = cv2.CascadeClassifier(_cascade_path("haarcascade_eye.xml"))
+
+    if face_cascade.empty() or eye_cascade.empty():
+        raise RuntimeError("Failed to load Haar cascade classifiers.")
 
     if len(image.shape) == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
