@@ -76,10 +76,10 @@ python app.py
 ```
 
 Deploy on [Streamlit Community Cloud](https://share.streamlit.io):
-1. New app → select this repo → main file `streamlit_app.py`
-2. Python version: **3.11** (or 3.10)
-3. Leave requirements as default `requirements.txt` (Cloud-friendly, no TensorFlow)
-4. Reboot the app after this fix if a previous install failed
+1. **Delete** the old app if install failed, then **New app**
+2. Repo + main file: `streamlit_app.py`
+3. Open **Advanced settings** → set **Python version to 3.12** (not 3.13/3.14)
+4. Deploy — reboot alone will keep a broken 3.14 environment
 
 ---
 
