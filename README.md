@@ -1,6 +1,8 @@
 # Hybrid Face Recognition System
-### SSIEMS Parbhani — M.Tech Research Project
-**Based on:** Panchalwar Mam's Implementation Paper
+
+**Made by [Syed Asif](https://www.linkedin.com/in/the-syed-asif)** · [GitHub](https://github.com/SyedAsif7)
+
+**Based on:** Panchalwar Mam's Implementation Paper  
 *"Implementation of Hybrid Deep Learning-Based Face Recognition Using SIFT-CNN Integration"*
 
 ---

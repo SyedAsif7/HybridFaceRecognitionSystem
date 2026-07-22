@@ -89,11 +89,21 @@ html, body, [data-testid="stAppViewContainer"], .stApp, [class*="css"] {
 }
 .kicker {
   margin: 0 0 0.4rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.kicker a {
   color: var(--teal);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.kicker a:hover {
+  border-bottom-color: var(--teal);
 }
 .hero-title {
   margin: 0;
@@ -446,7 +456,12 @@ st.markdown(
     f"""
     <div class="app-hero">
       <div>
-        <p class="kicker">SSIEMS Parbhani · M.Tech research</p>
+        <p class="kicker">
+          Project made by <strong>Syed Asif</strong> ·
+          <a href="https://www.linkedin.com/in/the-syed-asif" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          ·
+          <a href="https://github.com/SyedAsif7" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </p>
         <h1 class="hero-title">Hybrid Face Recognition</h1>
         <p class="hero-copy">
           Align faces, fuse SIFT + HOG + Gabor features, and match against
