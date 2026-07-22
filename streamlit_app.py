@@ -2,7 +2,6 @@
 Streamlit UI — Hybrid Face Recognition System
 ==============================================
 Research fusion (SIFT + HOG + Gabor) + custom face database.
-No TensorFlow required — suitable for Streamlit Community Cloud.
 """
 
 from __future__ import annotations
@@ -22,35 +21,226 @@ ROOT = Path(__file__).resolve().parent
 FACES_DIR = ROOT / "Faces"
 FACES_INDEX = FACES_DIR / "index.json"
 HISTORY_FILE = ROOT / "data" / "recognition_history.json"
-MATCH_THRESHOLD = 65.0  # percent
+MATCH_THRESHOLD = 65.0
 
 st.set_page_config(
     page_title="Hybrid Face Recognition",
-    page_icon="👤",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
     """
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Instrument+Serif:ital@0;1&display=swap');
-      html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-      .block-container { padding-top: 1.5rem; max-width: 1100px; }
-      h1, h2, h3 { font-family: 'Instrument Serif', Georgia, serif !important; font-weight: 400 !important; }
-      .hero-sub { color: #5c6b73; font-size: 1.05rem; margin-top: -0.4rem; margin-bottom: 1.5rem; }
-      .result-card {
-        border: 1px solid #d5dde3; border-radius: 12px; padding: 1.1rem 1.25rem;
-        background: linear-gradient(160deg, #f7fafb 0%, #eef3f6 100%);
-      }
-      .name-xl { font-size: 1.85rem; font-family: 'Instrument Serif', Georgia, serif; margin: 0; color: #14323f; }
-      .meta { color: #5c6b73; font-size: 0.95rem; }
-      .badge-high { color: #0f6b4c; font-weight: 700; }
-      .badge-med  { color: #9a6700; font-weight: 700; }
-      .badge-low  { color: #a32020; font-weight: 700; }
-      .badge-none { color: #6b7280; font-weight: 700; }
-    </style>
-    """,
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink: #0c1f26;
+  --muted: #5a6f78;
+  --line: #c9d6dc;
+  --panel: rgba(255,255,255,0.72);
+  --teal: #176b7a;
+  --teal-deep: #0e4a56;
+  --ok: #1b6b4a;
+  --warn: #8a6a12;
+  --bad: #9b2c2c;
+  --mist: #dce8ec;
+}
+
+html, body, [class*="css"], .stApp {
+  font-family: 'Source Sans 3', sans-serif;
+  color: var(--ink);
+}
+
+.stApp {
+  background:
+    radial-gradient(1200px 600px at 8% -10%, #c5dde4 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #d5e4df 0%, transparent 50%),
+    linear-gradient(180deg, #eef4f6 0%, #e3ecef 45%, #dfe8eb 100%);
+}
+
+.block-container {
+  padding-top: 1.75rem !important;
+  padding-bottom: 3rem !important;
+  max-width: 1080px;
+}
+
+h1, h2, h3, .brand-title {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-weight: 550 !important;
+  letter-spacing: -0.02em;
+  color: var(--ink) !important;
+}
+
+/* Hide default chrome noise */
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
+
+div[data-testid="stToolbar"] { display: none; }
+
+/* Brand */
+.brand-wrap {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+.brand-kicker {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin: 0 0 0.45rem 0;
+}
+.brand-title {
+  font-size: clamp(2.1rem, 4vw, 2.85rem);
+  line-height: 1.05;
+  margin: 0 0 0.55rem 0;
+}
+.brand-sub {
+  margin: 0;
+  max-width: 36rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+.brand-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1.25rem;
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.brand-meta strong { color: var(--ink); font-weight: 600; }
+
+/* Panels */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1.15rem 1.25rem 1.25rem;
+  backdrop-filter: blur(8px);
+}
+.panel-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  margin: 0 0 0.75rem 0;
+}
+.section-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.45rem;
+  margin: 0 0 0.35rem 0;
+  color: var(--ink);
+}
+.section-help {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 1.1rem 0;
+  line-height: 1.4;
+}
+
+/* Result */
+.result-shell {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1.25rem;
+  min-height: 220px;
+}
+.result-name {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 2rem;
+  line-height: 1.1;
+  margin: 0 0 0.65rem 0;
+  color: var(--ink);
+}
+.result-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+}
+.result-key { color: var(--muted); min-width: 6.5rem; }
+.result-val { font-weight: 600; color: var(--ink); }
+.level-high { color: var(--ok); }
+.level-medium { color: var(--warn); }
+.level-low, .level-none { color: var(--bad); }
+.empty-state {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 1.5rem 0.25rem;
+}
+
+/* Gallery */
+.person-tile {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.85rem;
+  height: 100%;
+}
+.person-name {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.15rem;
+  margin: 0.55rem 0 0.15rem 0;
+}
+.person-meta { color: var(--muted); font-size: 0.85rem; margin: 0; }
+
+/* Streamlit controls */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1.25rem;
+}
+.stTabs [data-baseweb="tab"] {
+  height: auto;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  border: none !important;
+  color: var(--muted);
+  font-weight: 600;
+}
+.stTabs [aria-selected="true"] {
+  color: var(--ink) !important;
+  border-bottom: 2px solid var(--teal) !important;
+}
+.stButton > button[kind="primary"] {
+  background: var(--teal-deep) !important;
+  border: 1px solid var(--teal-deep) !important;
+  color: #fff !important;
+  border-radius: 3px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  min-height: 2.7rem;
+}
+.stButton > button[kind="primary"]:hover {
+  background: var(--teal) !important;
+  border-color: var(--teal) !important;
+}
+.stTextInput input, .stFileUploader, div[data-testid="stFileUploader"] {
+  border-radius: 3px !important;
+}
+div[data-testid="stImage"] img {
+  border-radius: 3px;
+  border: 1px solid var(--line);
+}
+.note-muted {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin-top: 1.5rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+</style>
+""",
     unsafe_allow_html=True,
 )
 
@@ -61,14 +251,6 @@ def confidence_level(pct: float) -> str:
     if pct >= 50:
         return "Medium"
     return "Low"
-
-
-def level_class(level: str) -> str:
-    return {
-        "High": "badge-high",
-        "Medium": "badge-med",
-        "Low": "badge-low",
-    }.get(level, "badge-none")
 
 
 def load_face_index() -> dict:
@@ -107,7 +289,7 @@ def recognize(image_bgr: np.ndarray) -> dict:
     query = extract_research_fusion(face)
     best_name, best_id, best_score = None, None, -1e9
 
-    for face_id, data in faces.items():
+    for _face_id, data in faces.items():
         stored = np.asarray(data["avg_encoding"], dtype=np.float64)
         denom = np.linalg.norm(query) * np.linalg.norm(stored)
         score = float(np.dot(query, stored) / denom) if denom > 0 else -1.0
@@ -124,7 +306,7 @@ def recognize(image_bgr: np.ndarray) -> dict:
             "level": confidence_level(confidence),
             "found": False,
             "aligned": face,
-            "detail": f"Best score below {MATCH_THRESHOLD:.0f}% threshold.",
+            "detail": f"Best score below {MATCH_THRESHOLD:.0f}% match threshold.",
             "score": float(best_score),
         }
 
@@ -135,7 +317,7 @@ def recognize(image_bgr: np.ndarray) -> dict:
         "level": confidence_level(confidence),
         "found": True,
         "aligned": face,
-        "detail": "Matched via research fusion (SIFT + HOG + Gabor).",
+        "detail": "Matched with research fusion (SIFT + HOG + Gabor).",
         "score": float(best_score),
     }
 
@@ -163,7 +345,6 @@ def register_person(name: str, images_bgr: list[np.ndarray]) -> tuple[bool, str]
     if not encodings:
         return False, "No valid faces detected in the uploaded images."
 
-    # Replace existing person with same name if present
     existing_id = None
     for fid, data in index["registered_faces"].items():
         if data["name"].lower() == name.lower():
@@ -203,99 +384,174 @@ def append_history(record: dict) -> None:
         pass
 
 
-def show_result(result: dict) -> None:
+def render_brand(n_faces: int) -> None:
+    st.markdown(
+        f"""
+        <div class="brand-wrap">
+          <p class="brand-kicker">SSIEMS Parbhani · M.Tech</p>
+          <h1 class="brand-title">Hybrid Face Recognition</h1>
+          <p class="brand-sub">
+            Eye-landmark alignment and research feature fusion
+            (SIFT + HOG + Gabor) for custom identity matching.
+          </p>
+          <div class="brand-meta">
+            <span><strong>{n_faces}</strong> enrolled</span>
+            <span>Threshold <strong>{MATCH_THRESHOLD:.0f}%</strong></span>
+            <span>Fusion <strong>SIFT · HOG · Gabor</strong></span>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_result(result: dict) -> None:
     aligned = (result["aligned"] * 255).astype(np.uint8)
-    c1, c2 = st.columns([1, 1.2])
-    with c1:
-        st.image(aligned, caption="Aligned face", use_container_width=True, clamp=True)
-    with c2:
-        cls = level_class(result["level"]) if result["found"] else "badge-none"
+    level = result["level"] if result["found"] else "none"
+    level_cls = f"level-{level.lower()}" if result["found"] else "level-none"
+
+    left, right = st.columns([1, 1.15], gap="large")
+    with left:
+        st.markdown('<p class="panel-label">Aligned face</p>', unsafe_allow_html=True)
+        st.image(aligned, use_container_width=True, clamp=True)
+    with right:
         st.markdown(
             f"""
-            <div class="result-card">
-              <p class="name-xl">{result['label']}</p>
-              <p class="meta">Confidence:
-                <span class="{cls}">{result['confidence']:.1f}% ({result['level']})</span>
-              </p>
-              <p class="meta">{result.get('detail', '')}</p>
+            <div class="result-shell">
+              <p class="panel-label">Match result</p>
+              <p class="result-name">{result['label']}</p>
+              <div class="result-row">
+                <span class="result-key">Confidence</span>
+                <span class="result-val {level_cls}">{result['confidence']:.1f}% · {result['level']}</span>
+              </div>
+              <div class="result-row">
+                <span class="result-key">Method</span>
+                <span class="result-val">Research fusion</span>
+              </div>
+              <p class="section-help" style="margin-top:0.9rem;margin-bottom:0;">{result.get('detail', '')}</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
 
-# ── Sidebar ───────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("### Hybrid Face Recognition")
-    st.caption("SSIEMS Parbhani · M.Tech research demo")
-    page = st.radio(
-        "Navigate",
-        ["Recognize", "Register", "Database"],
-        label_visibility="collapsed",
-    )
-    index_preview = load_face_index()
-    n_faces = len(index_preview.get("registered_faces", {}))
-    st.markdown(f"**{n_faces}** registered face(s)")
+def render_empty_result() -> None:
     st.markdown(
-        f"Match threshold: **{MATCH_THRESHOLD:.0f}%**  \n"
-        "Fusion: SIFT + HOG + Gabor"
-    )
-    st.info(
-        "On Streamlit Cloud, new registrations may reset when the app sleeps. "
-        "Commit updated `Faces/` to GitHub to keep them."
+        """
+        <div class="result-shell">
+          <p class="panel-label">Match result</p>
+          <p class="empty-state">
+            Upload or capture a face, then run recognition.
+            The aligned crop and identity match will appear here.
+          </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
-st.title("Hybrid Face Recognition")
-st.markdown(
-    '<p class="hero-sub">Eye-landmark alignment · research feature fusion · custom identity match</p>',
-    unsafe_allow_html=True,
+# ── Data ──────────────────────────────────────────────────
+index_preview = load_face_index()
+faces_map = index_preview.get("registered_faces", {})
+n_faces = len(faces_map)
+
+render_brand(n_faces)
+
+tab_recognize, tab_register, tab_gallery = st.tabs(
+    ["Recognize", "Register", "Gallery"]
 )
 
 
 # ── Recognize ─────────────────────────────────────────────
-if page == "Recognize":
-    st.subheader("Identify a face")
-    source = st.radio("Input", ["Upload image", "Camera"], horizontal=True)
+with tab_recognize:
+    st.markdown('<p class="section-title">Identify a face</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="section-help">Provide one clear frontal photo. The system aligns the face, extracts fused features, and compares against the enrolled gallery.</p>',
+        unsafe_allow_html=True,
+    )
 
-    image_bgr = None
-    if source == "Upload image":
-        upload = st.file_uploader("Face image", type=["jpg", "jpeg", "png", "bmp", "webp"])
-        if upload is not None:
-            image_bgr = bytes_to_bgr(upload.getvalue())
-            st.image(upload.getvalue(), caption="Uploaded", use_container_width=True)
-    else:
-        shot = st.camera_input("Capture face")
-        if shot is not None:
-            image_bgr = bytes_to_bgr(shot.getvalue())
+    col_in, col_out = st.columns([1.05, 1], gap="large")
 
-    if image_bgr is not None and st.button("Recognize", type="primary", use_container_width=True):
-        with st.spinner("Extracting features and matching…"):
-            result = recognize(image_bgr)
-        show_result(result)
-        append_history(
-            {
-                "label": result["label"],
-                "confidence": f"{result['confidence']:.2f}%",
-                "confidence_level": result["level"],
-                "found": result["found"],
-                "timestamp": datetime.now().isoformat(),
-                "source": "streamlit",
-                "model_used": "Custom Face Database (Research Fusion)",
-            }
+    with col_in:
+        st.markdown('<p class="panel-label">Input</p>', unsafe_allow_html=True)
+        source = st.radio(
+            "Source",
+            ["Upload", "Camera"],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="recognize_source",
         )
+
+        image_bgr = None
+        if source == "Upload":
+            upload = st.file_uploader(
+                "Face image",
+                type=["jpg", "jpeg", "png", "bmp", "webp"],
+                key="recognize_upload",
+                label_visibility="collapsed",
+            )
+            if upload is not None:
+                image_bgr = bytes_to_bgr(upload.getvalue())
+                st.image(upload.getvalue(), use_container_width=True)
+        else:
+            shot = st.camera_input("Capture", label_visibility="collapsed", key="recognize_cam")
+            if shot is not None:
+                image_bgr = bytes_to_bgr(shot.getvalue())
+
+        run = st.button(
+            "Run recognition",
+            type="primary",
+            use_container_width=True,
+            disabled=image_bgr is None,
+            key="btn_recognize",
+        )
+
+    with col_out:
+        if run and image_bgr is not None:
+            with st.spinner("Aligning face and matching identities…"):
+                result = recognize(image_bgr)
+            st.session_state["last_result"] = result
+            append_history(
+                {
+                    "label": result["label"],
+                    "confidence": f"{result['confidence']:.2f}%",
+                    "confidence_level": result["level"],
+                    "found": result["found"],
+                    "timestamp": datetime.now().isoformat(),
+                    "source": "streamlit",
+                    "model_used": "Custom Face Database (Research Fusion)",
+                }
+            )
+
+        if "last_result" in st.session_state:
+            render_result(st.session_state["last_result"])
+        else:
+            render_empty_result()
 
 
 # ── Register ──────────────────────────────────────────────
-elif page == "Register":
-    st.subheader("Register a person")
-    name = st.text_input("Person name", placeholder="e.g. Salman Khan")
-    uploads = st.file_uploader(
-        "One or more face images",
-        type=["jpg", "jpeg", "png", "bmp", "webp"],
-        accept_multiple_files=True,
+with tab_register:
+    st.markdown('<p class="section-title">Enroll a person</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="section-help">Add a name and one or more clear face images. Multiple angles improve match stability.</p>',
+        unsafe_allow_html=True,
     )
-    cam = st.camera_input("Or capture one photo")
+
+    r1, r2 = st.columns([1, 1.1], gap="large")
+    with r1:
+        st.markdown('<p class="panel-label">Details</p>', unsafe_allow_html=True)
+        name = st.text_input(
+            "Full name",
+            placeholder="e.g. Alex Lacamoire",
+            key="register_name",
+        )
+        uploads = st.file_uploader(
+            "Face images",
+            type=["jpg", "jpeg", "png", "bmp", "webp"],
+            accept_multiple_files=True,
+            key="register_uploads",
+        )
+        cam = st.camera_input("Optional camera capture", key="register_cam")
 
     images: list[np.ndarray] = []
     if uploads:
@@ -308,37 +564,96 @@ elif page == "Register":
         if img is not None:
             images.append(img)
 
-    if images:
-        st.caption(f"{len(images)} image(s) ready")
-        cols = st.columns(min(4, len(images)))
-        for i, img in enumerate(images[:4]):
-            cols[i].image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), use_container_width=True)
+    with r2:
+        st.markdown('<p class="panel-label">Preview</p>', unsafe_allow_html=True)
+        if images:
+            st.caption(f"{len(images)} image(s) ready")
+            cols = st.columns(min(3, len(images)))
+            for i, img in enumerate(images[:6]):
+                cols[i % len(cols)].image(
+                    cv2.cvtColor(img, cv2.COLOR_BGR2RGB),
+                    use_container_width=True,
+                )
+        else:
+            st.markdown(
+                """
+                <div class="result-shell">
+                  <p class="empty-state">Image previews will show here after you upload or capture photos.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    if st.button("Register face", type="primary", use_container_width=True):
-        with st.spinner("Aligning faces and building encoding…"):
+    if st.button(
+        "Save to gallery",
+        type="primary",
+        use_container_width=True,
+        key="btn_register",
+    ):
+        with st.spinner("Building face encoding…"):
             ok, msg = register_person(name, images)
         if ok:
             st.success(msg)
             st.cache_data.clear()
+            if "last_result" in st.session_state:
+                del st.session_state["last_result"]
+            st.rerun()
         else:
             st.error(msg)
 
+    st.markdown(
+        """
+        <p class="note-muted">
+          On Streamlit Cloud, enrollments written at runtime may reset when the app sleeps.
+          Commit an updated <code>Faces/</code> folder to GitHub to keep identities permanently.
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
 
-# ── Database ──────────────────────────────────────────────
-else:
-    st.subheader("Registered faces")
-    index = load_face_index()
-    faces = index.get("registered_faces", {})
-    if not faces:
-        st.warning("No faces in the database yet. Use Register to add someone.")
+
+# ── Gallery ───────────────────────────────────────────────
+with tab_gallery:
+    st.markdown('<p class="section-title">Enrolled gallery</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="section-help">People currently available for recognition.</p>',
+        unsafe_allow_html=True,
+    )
+
+    if not faces_map:
+        st.markdown(
+            """
+            <div class="result-shell">
+              <p class="empty-state">No faces enrolled yet. Open the Register tab to add the first person.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     else:
-        for fid in sorted(faces.keys(), key=lambda x: int(x)):
-            data = faces[fid]
-            with st.container(border=True):
-                left, right = st.columns([2, 1])
-                left.markdown(f"**{data['name']}**  \nID `{data['id']}` · {data['num_images']} image(s)")
+        people = [
+            faces_map[fid]
+            for fid in sorted(faces_map.keys(), key=lambda x: int(x))
+        ]
+        rows = (len(people) + 2) // 3
+        idx = 0
+        for _ in range(rows):
+            cols = st.columns(3, gap="medium")
+            for c in cols:
+                if idx >= len(people):
+                    break
+                data = people[idx]
+                idx += 1
                 sample = ROOT / data.get("directory", "")
                 jpgs = sorted(sample.glob("*.jpg")) if sample.exists() else []
-                if jpgs:
-                    right.image(str(jpgs[0]), use_container_width=True)
-
+                with c:
+                    if jpgs:
+                        st.image(str(jpgs[0]), use_container_width=True)
+                    st.markdown(
+                        f"""
+                        <div class="person-tile">
+                          <p class="person-name">{data['name']}</p>
+                          <p class="person-meta">ID {data['id']} · {data['num_images']} image(s)</p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
