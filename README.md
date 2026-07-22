@@ -1,34 +1,7 @@
----
-title: Hybrid Face Recognition System
-emoji: 👤
-colorFrom: indigo
-colorTo: blue
-sdk: gradio
-sdk_version: 4.44.0
-app_file: gradio_app.py
-pinned: false
----
-
 # Hybrid Face Recognition System
 ### SSIEMS Parbhani — M.Tech Research Project
 **Based on:** Panchalwar Mam's Implementation Paper
 *"Implementation of Hybrid Deep Learning-Based Face Recognition Using SIFT-CNN Integration"*
-
----
-
-## Deploy on Hugging Face Spaces (free path)
-
-Docker Spaces are **paid**. Use **Gradio** instead (free accounts may get up to 2 ZeroGPU Spaces).
-
-1. Go to [huggingface.co/new-space](https://huggingface.co/new-space)
-2. **SDK:** Gradio (not Docker)
-3. **Hardware:** ZeroGPU if shown (free tier), otherwise try CPU if your account allows it
-4. Create the Space, then upload/push this repo **or** connect GitHub:  
-   `SyedAsif7/HybridFaceRecognitionSystem`
-5. Entry file is `gradio_app.py` (set in README frontmatter as `app_file`)
-6. Wait for the build, then open the Space URL
-
-If Gradio also asks for PRO, Hugging Face free compute is not available on your account — use a free VM instead (Oracle Always Free) or demo locally with a tunnel.
 
 ---
 
@@ -82,12 +55,25 @@ pip install -r requirements.txt
 # 2. Train model
 python main.py --train --dataset orl --method hybrid --optimizer adam --activation softmax
 
-# 3. Run application
+# 3. Run Flask application
 python app.py
 
 # 4. Open browser
 http://localhost:5000
 ```
+
+### Streamlit app (recommended for free hosting)
+
+```bash
+pip install -r requirements-streamlit.txt
+streamlit run streamlit_app.py
+```
+
+Deploy on [Streamlit Community Cloud](https://share.streamlit.io):
+1. Push this repo to GitHub
+2. New app → select repo
+3. Main file: `streamlit_app.py`
+4. Python requirements: `requirements-streamlit.txt`
 
 ---
 
