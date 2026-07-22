@@ -25,39 +25,41 @@ MATCH_THRESHOLD = 65.0
 
 st.set_page_config(
     page_title="Hybrid Face Recognition",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap');
 
 :root {
-  --bg: #ebe7df;
-  --sheet: #f7f5f0;
-  --ink: #1a1a1a;
-  --mute: #5e5a54;
-  --line: #d2cdc3;
-  --accent: #0f5c4c;
-  --accent-2: #163a4a;
-  --ok: #0f5c4c;
-  --warn: #8a6b1f;
-  --bad: #8a3030;
-  --soft: #e4efe9;
+  --bg: #e8eef1;
+  --card: #ffffff;
+  --ink: #12202a;
+  --mute: #5a6b75;
+  --line: #cfd9df;
+  --teal: #0d6b5c;
+  --teal-deep: #0a4f44;
+  --navy: #1c3d4f;
+  --ok: #0d6b5c;
+  --warn: #9a6b12;
+  --bad: #a33a3a;
+  --soft: #e7f2ef;
 }
 
-html, body, [data-testid="stAppViewContainer"], .stApp {
-  font-family: 'Manrope', sans-serif !important;
-  color: var(--ink) !important;
+html, body, [data-testid="stAppViewContainer"], .stApp,
+p, span, label, div, input, button, textarea {
+  font-family: 'DM Sans', sans-serif !important;
 }
 
 [data-testid="stAppViewContainer"] {
   background:
-    radial-gradient(circle at 12% 8%, #dfece6 0%, transparent 42%),
-    radial-gradient(circle at 88% 0%, #d9e3ea 0%, transparent 40%),
-    linear-gradient(180deg, #f0ece4 0%, var(--bg) 100%) !important;
+    radial-gradient(900px 420px at 0% 0%, #d5e5e8 0%, transparent 55%),
+    radial-gradient(700px 360px at 100% 0%, #d9e4de 0%, transparent 50%),
+    var(--bg) !important;
+  color: var(--ink) !important;
 }
 
 [data-testid="stHeader"],
@@ -66,205 +68,236 @@ html, body, [data-testid="stAppViewContainer"], .stApp {
 #MainMenu, footer { display: none !important; }
 
 .block-container {
-  max-width: 880px !important;
-  padding-top: 1.25rem !important;
-  padding-bottom: 3rem !important;
+  max-width: 1040px !important;
+  padding: 1.5rem 1.25rem 3rem !important;
 }
 
-/* Shell */
-.shell {
-  background: var(--sheet);
-  border: 1px solid var(--line);
-  box-shadow: 0 18px 50px rgba(26, 26, 26, 0.06);
-  padding: 1.5rem 1.6rem 1.7rem;
-}
-
-.top {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-  padding-bottom: 1.15rem;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 1.1rem;
-}
-.brand {
+/* Type scale */
+.ui-title {
   margin: 0;
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: clamp(1.55rem, 3.5vw, 2rem);
-  line-height: 1.15;
+  font-family: 'Source Serif 4', Georgia, serif !important;
+  font-size: 34px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
   letter-spacing: -0.02em;
   color: var(--ink);
 }
-.byline {
-  margin: 0.55rem 0 0;
+.ui-byline {
+  margin: 10px 0 0;
+  font-size: 15px !important;
+  line-height: 1.5 !important;
   color: var(--mute);
-  font-size: 0.9rem;
-  line-height: 1.5;
 }
-.byline a {
-  color: var(--accent-2);
+.ui-byline a {
+  color: var(--navy);
   font-weight: 600;
   text-decoration: none;
-  border-bottom: 1px solid rgba(22, 58, 74, 0.35);
+  border-bottom: 1px solid rgba(28,61,79,0.35);
 }
-.byline a:hover { border-bottom-color: var(--accent-2); }
-.meta {
-  text-align: right;
-  min-width: 9rem;
-}
-.meta strong {
-  display: block;
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 1.4rem;
-  line-height: 1;
-}
-.meta span {
-  display: block;
-  margin-top: 0.25rem;
+.ui-byline a:hover { border-bottom-color: var(--navy); }
+.ui-lead {
+  margin: 14px 0 0;
+  font-size: 16px !important;
+  line-height: 1.55 !important;
   color: var(--mute);
-  font-size: 0.72rem;
-  font-weight: 600;
+  max-width: 46rem;
+}
+.ui-count {
+  text-align: right;
+}
+.ui-count b {
+  display: block;
+  font-family: 'Source Serif 4', Georgia, serif !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  color: var(--ink);
+}
+.ui-count span {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px !important;
+  font-weight: 700 !important;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.lead {
-  margin: 0 0 1.15rem;
   color: var(--mute);
-  font-size: 0.98rem;
-  line-height: 1.5;
 }
-
-.h {
-  margin: 0 0 0.25rem;
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 1.28rem;
+.ui-h2 {
+  margin: 0 0 6px;
+  font-family: 'Source Serif 4', Georgia, serif !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  color: var(--ink);
 }
-.p {
-  margin: 0 0 1rem;
+.ui-help {
+  margin: 0 0 18px;
+  font-size: 15px !important;
+  line-height: 1.5 !important;
   color: var(--mute);
-  font-size: 0.92rem;
-  line-height: 1.45;
 }
-.lbl {
-  margin: 0 0 0.45rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.11em;
+.ui-label {
+  margin: 0 0 8px;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--accent-2);
+  color: var(--navy);
 }
-.box {
-  background: #fff;
+.ui-panel {
+  background: var(--card);
   border: 1px solid var(--line);
-  padding: 0.95rem 1rem;
+  padding: 16px;
+  min-height: 120px;
 }
-.name {
-  margin: 0 0 0.7rem;
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 1.7rem;
-  line-height: 1.1;
+.ui-name {
+  margin: 0 0 12px;
+  font-family: 'Source Serif 4', Georgia, serif !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
 }
-.row {
+.ui-kv {
   display: grid;
-  grid-template-columns: 6.5rem 1fr;
-  gap: 0.3rem 0.7rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.9rem;
+  grid-template-columns: 110px 1fr;
+  gap: 6px 12px;
+  margin-bottom: 12px;
+  font-size: 15px !important;
 }
-.row i { color: var(--mute); font-style: normal; }
-.row b { font-weight: 650; }
-.ok { color: var(--ok); }
-.warn { color: var(--warn); }
-.bad { color: var(--bad); }
-.bar {
-  height: 7px;
-  background: #ece8e0;
+.ui-kv i { color: var(--mute); font-style: normal; }
+.ui-kv b { font-weight: 650; color: var(--ink); }
+.ok { color: var(--ok) !important; }
+.warn { color: var(--warn) !important; }
+.bad { color: var(--bad) !important; }
+.ui-bar {
+  height: 8px;
+  background: #edf2f4;
   border: 1px solid var(--line);
-  margin: 0.2rem 0 0.75rem;
+  margin: 0 0 12px;
   overflow: hidden;
 }
-.bar > i {
+.ui-bar > span {
   display: block;
   height: 100%;
-  background: var(--accent);
-  font-style: normal;
+  background: var(--teal);
 }
-.soft {
-  color: var(--mute);
-  font-size: 0.88rem;
-  line-height: 1.45;
+.ui-soft {
   margin: 0;
-}
-.person {
-  margin: 0.55rem 0 0.1rem;
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 1.05rem;
-}
-.person-sub { margin: 0; color: var(--mute); font-size: 0.8rem; }
-.note {
-  margin-top: 1.2rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--line);
+  font-size: 14px !important;
+  line-height: 1.5 !important;
   color: var(--mute);
-  font-size: 0.78rem;
-  line-height: 1.45;
+}
+.ui-person {
+  margin: 10px 0 2px;
+  font-family: 'Source Serif 4', Georgia, serif !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+.ui-person-meta {
+  margin: 0;
+  font-size: 13px !important;
+  color: var(--mute);
+}
+.ui-note {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  color: var(--mute);
+}
+.ui-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+}
+@media (max-width: 720px) {
+  .ui-header { flex-direction: column; }
+  .ui-count { text-align: left; }
+  .ui-title { font-size: 28px !important; }
 }
 
-/* Nav radio */
-div[data-testid="stRadio"] > label { display: none !important; }
-div[data-testid="stRadio"] div[role="radiogroup"] {
-  gap: 0 !important;
-  border: 1px solid var(--line) !important;
-  background: #fff !important;
-  margin: 0 0 1.2rem 0 !important;
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 0 !important;
+  margin-bottom: 20px !important;
 }
-div[data-testid="stRadio"] label {
-  flex: 1 !important;
-  justify-content: center !important;
-  padding: 0.72rem 0.4rem !important;
-  margin: 0 !important;
+.stTabs [data-baseweb="tab"] {
+  flex: 1;
+  justify-content: center;
+  height: auto !important;
+  padding: 14px 10px !important;
+  font-size: 15px !important;
+  font-weight: 650 !important;
+  color: var(--mute) !important;
   border-right: 1px solid var(--line) !important;
   background: transparent !important;
 }
-div[data-testid="stRadio"] label:last-child { border-right: none !important; }
+.stTabs [data-baseweb="tab"]:last-child { border-right: none !important; }
+.stTabs [aria-selected="true"] {
+  color: var(--ink) !important;
+  background: var(--soft) !important;
+  box-shadow: inset 0 -3px 0 var(--teal);
+}
+.stTabs [data-baseweb="tab-highlight"],
+.stTabs [data-baseweb="tab-border"] { display: none !important; }
+
+/* Widgets */
+div[data-testid="stRadio"] p,
+div[data-testid="stRadio"] label,
+.stMarkdown, .stCaption, .stTextInput label,
+[data-testid="stFileUploader"] label,
+[data-testid="stWidgetLabel"] p {
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+div[data-testid="stRadio"] div[role="radiogroup"] {
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+div[data-testid="stRadio"] label {
+  background: #fff !important;
+  border: 1px solid var(--line) !important;
+  padding: 8px 14px !important;
+  margin: 0 !important;
+}
 div[data-testid="stRadio"] label:has(input:checked) {
   background: var(--soft) !important;
-  box-shadow: inset 0 -2px 0 var(--accent);
+  border-color: var(--teal) !important;
 }
-div[data-testid="stRadio"] p {
-  font-size: 0.9rem !important;
-  font-weight: 650 !important;
-  text-align: center !important;
-}
-
 .stButton > button {
-  border-radius: 2px !important;
-  min-height: 2.7rem !important;
+  border-radius: 4px !important;
+  min-height: 46px !important;
+  font-size: 15px !important;
   font-weight: 700 !important;
 }
 .stButton > button[kind="primary"] {
-  background: var(--accent) !important;
-  border-color: var(--accent) !important;
+  background: var(--teal-deep) !important;
+  border-color: var(--teal-deep) !important;
   color: #fff !important;
+}
+.stTextInput input {
+  font-size: 15px !important;
+  min-height: 44px !important;
+  border-radius: 4px !important;
 }
 div[data-testid="stImage"] img {
   border: 1px solid var(--line);
+  border-radius: 2px;
 }
 div[data-testid="stFileUploader"] section {
   background: #fff !important;
-  border: 1px dashed #b9b3a8 !important;
-}
-.stTextInput input {
-  border-radius: 2px !important;
-  background: #fff !important;
-}
-
-@media (max-width: 700px) {
-  .top { flex-direction: column; }
-  .meta { text-align: left; }
-  .shell { padding: 1.15rem; }
+  border: 1px dashed #9eb0ba !important;
+  border-radius: 4px !important;
+  padding: 18px !important;
 }
 </style>
 """,
@@ -416,62 +449,54 @@ def tone(found: bool, level: str) -> str:
 faces_map = load_face_index().get("registered_faces", {})
 n_faces = len(faces_map)
 
-st.markdown('<div class="shell">', unsafe_allow_html=True)
-
 st.markdown(
     f"""
-    <div class="top">
+    <div class="ui-header">
       <div>
-        <h1 class="brand">Hybrid Face Recognition</h1>
-        <p class="byline">
+        <h1 class="ui-title">Hybrid Face Recognition</h1>
+        <p class="ui-byline">
           Made by <strong>Syed Asif</strong> ·
           <a href="https://www.linkedin.com/in/the-syed-asif" target="_blank" rel="noopener noreferrer">LinkedIn</a>
           ·
           <a href="https://github.com/SyedAsif7" target="_blank" rel="noopener noreferrer">GitHub</a>
         </p>
+        <p class="ui-lead">
+          Align a face, fuse SIFT + HOG + Gabor features, and match it to your gallery
+          with a confidence score.
+        </p>
       </div>
-      <div class="meta">
-        <strong>{n_faces}</strong>
+      <div class="ui-count">
+        <b>{n_faces}</b>
         <span>Enrolled faces</span>
       </div>
     </div>
-    <p class="lead">
-      Align a face, fuse SIFT + HOG + Gabor features, and match it to your gallery
-      with a confidence score.
-    </p>
     """,
     unsafe_allow_html=True,
 )
 
-page = st.radio(
-    "Section",
-    ["Recognize", "Register", "Gallery"],
-    horizontal=True,
-    label_visibility="collapsed",
-    key="nav",
-)
+tab_rec, tab_reg, tab_gal = st.tabs(["Recognize", "Register", "Gallery"])
 
-# ── Recognize ─────────────────────────────────────────────
-if page == "Recognize":
+with tab_rec:
     st.markdown(
-        '<p class="h">Recognize</p><p class="p">Add one clear frontal photo, then run matching.</p>',
+        '<p class="ui-h2">Recognize a face</p>'
+        '<p class="ui-help">Upload or capture one clear frontal photo, then run matching.</p>',
         unsafe_allow_html=True,
     )
-    left, right = st.columns([1.05, 1], gap="large")
+    left, right = st.columns([1.08, 1], gap="large")
 
     with left:
-        st.markdown('<p class="lbl">Input</p>', unsafe_allow_html=True)
+        st.markdown('<p class="ui-label">Input</p>', unsafe_allow_html=True)
         source = st.radio(
             "Source",
-            ["Upload", "Camera"],
+            ["Upload image", "Camera"],
             horizontal=True,
             label_visibility="collapsed",
             key="src",
         )
         image_bgr = None
-        if source == "Upload":
+        if source == "Upload image":
             up = st.file_uploader(
-                "Face image",
+                "Choose a face image",
                 type=["jpg", "jpeg", "png", "bmp", "webp"],
                 key="up",
             )
@@ -479,7 +504,7 @@ if page == "Recognize":
                 image_bgr = bytes_to_bgr(up.getvalue())
                 st.image(up.getvalue(), use_container_width=True)
         else:
-            cam = st.camera_input("Camera", key="cam")
+            cam = st.camera_input("Take a photo", key="cam")
             if cam is not None:
                 image_bgr = bytes_to_bgr(cam.getvalue())
 
@@ -488,12 +513,13 @@ if page == "Recognize":
             type="primary",
             use_container_width=True,
             disabled=image_bgr is None,
+            key="go",
         )
 
     with right:
-        st.markdown('<p class="lbl">Result</p>', unsafe_allow_html=True)
+        st.markdown('<p class="ui-label">Result</p>', unsafe_allow_html=True)
         if go and image_bgr is not None:
-            with st.spinner("Matching…"):
+            with st.spinner("Matching face…"):
                 result = recognize(image_bgr)
             st.session_state["result"] = result
             append_history(
@@ -511,40 +537,42 @@ if page == "Recognize":
         result = st.session_state.get("result")
         if not result:
             st.markdown(
-                '<div class="box"><p class="soft">Results appear here after you run recognition.</p></div>',
+                '<div class="ui-panel"><p class="ui-soft">'
+                "Your match result will appear here after recognition."
+                "</p></div>",
                 unsafe_allow_html=True,
             )
         else:
             aligned = (result["aligned"] * 255).astype(np.uint8)
             cls = tone(result["found"], result["level"])
             width = max(0.0, min(100.0, float(result["confidence"])))
-            st.image(aligned, use_container_width=True, clamp=True)
+            st.image(aligned, caption="Aligned face", use_container_width=True, clamp=True)
             st.markdown(
                 f"""
-                <div class="box" style="margin-top:0.75rem;">
-                  <p class="name">{html.escape(str(result['label']))}</p>
-                  <div class="row">
+                <div class="ui-panel" style="margin-top:12px;">
+                  <p class="ui-name">{html.escape(str(result['label']))}</p>
+                  <div class="ui-kv">
                     <i>Confidence</i>
                     <b class="{cls}">{result['confidence']:.1f}% · {html.escape(result['level'])}</b>
                     <i>Method</i>
                     <b>SIFT + HOG + Gabor</b>
                   </div>
-                  <div class="bar"><i style="width:{width:.1f}%;"></i></div>
-                  <p class="soft">{html.escape(str(result.get('detail', '')))}</p>
+                  <div class="ui-bar"><span style="width:{width:.1f}%;"></span></div>
+                  <p class="ui-soft">{html.escape(str(result.get('detail', '')))}</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-# ── Register ──────────────────────────────────────────────
-elif page == "Register":
+with tab_reg:
     st.markdown(
-        '<p class="h">Register</p><p class="p">Enroll a person with a name and one or more face images.</p>',
+        '<p class="ui-h2">Register a person</p>'
+        '<p class="ui-help">Add a name and one or more clear face images.</p>',
         unsafe_allow_html=True,
     )
     c1, c2 = st.columns(2, gap="large")
     with c1:
-        st.markdown('<p class="lbl">Details</p>', unsafe_allow_html=True)
+        st.markdown('<p class="ui-label">Details</p>', unsafe_allow_html=True)
         name = st.text_input("Full name", placeholder="e.g. Alex Lacamoire", key="name")
         files = st.file_uploader(
             "Face images",
@@ -566,14 +594,14 @@ elif page == "Register":
             images.append(img)
 
     with c2:
-        st.markdown('<p class="lbl">Preview</p>', unsafe_allow_html=True)
+        st.markdown('<p class="ui-label">Preview</p>', unsafe_allow_html=True)
         if not images:
             st.markdown(
-                '<div class="box"><p class="soft">Image previews show here.</p></div>',
+                '<div class="ui-panel"><p class="ui-soft">Previews appear here after upload.</p></div>',
                 unsafe_allow_html=True,
             )
         else:
-            st.caption(f"{len(images)} ready")
+            st.caption(f"{len(images)} image(s) ready")
             cols = st.columns(min(3, len(images)))
             for i, img in enumerate(images[:6]):
                 cols[i % len(cols)].image(
@@ -581,7 +609,7 @@ elif page == "Register":
                     use_container_width=True,
                 )
 
-    if st.button("Save to gallery", type="primary", use_container_width=True):
+    if st.button("Save to gallery", type="primary", use_container_width=True, key="save"):
         with st.spinner("Saving…"):
             ok, msg = register_person(name, images)
         if ok:
@@ -592,24 +620,20 @@ elif page == "Register":
             st.error(msg)
 
     st.markdown(
-        """
-        <p class="note">
-          On Streamlit Cloud, new enrollments may reset when the app sleeps.
-          Commit updated <code>Faces/</code> files to GitHub to keep them.
-        </p>
-        """,
+        '<p class="ui-note">On Streamlit Cloud, new enrollments may reset when the app sleeps. '
+        "Commit updated <code>Faces/</code> files to GitHub to keep them.</p>",
         unsafe_allow_html=True,
     )
 
-# ── Gallery ───────────────────────────────────────────────
-else:
+with tab_gal:
     st.markdown(
-        '<p class="h">Gallery</p><p class="p">People enrolled for recognition.</p>',
+        '<p class="ui-h2">Enrolled gallery</p>'
+        '<p class="ui-help">People currently available for recognition.</p>',
         unsafe_allow_html=True,
     )
     if not faces_map:
         st.markdown(
-            '<div class="box"><p class="soft">No faces yet. Use Register to add someone.</p></div>',
+            '<div class="ui-panel"><p class="ui-soft">No faces yet. Use Register to add someone.</p></div>',
             unsafe_allow_html=True,
         )
     else:
@@ -620,14 +644,13 @@ else:
                 folder = ROOT / person.get("directory", "")
                 photos = sorted(folder.glob("*.jpg")) if folder.exists() else []
                 with col:
+                    st.markdown('<div class="ui-panel">', unsafe_allow_html=True)
                     if photos:
                         st.image(str(photos[0]), use_container_width=True)
                     st.markdown(
-                        f"""
-                        <p class="person">{html.escape(str(person['name']))}</p>
-                        <p class="person-sub">ID {html.escape(str(person['id']))} · {int(person['num_images'])} image(s)</p>
-                        """,
+                        f'<p class="ui-person">{html.escape(str(person["name"]))}</p>'
+                        f'<p class="ui-person-meta">ID {html.escape(str(person["id"]))} · '
+                        f'{int(person["num_images"])} image(s)</p>',
                         unsafe_allow_html=True,
                     )
-
-st.markdown("</div>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
