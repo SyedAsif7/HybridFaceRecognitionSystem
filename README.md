@@ -49,8 +49,8 @@ Output: Identity + Confidence Score (High ≥80% / Medium 50-80% / Low <50%)
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
+# 1. Install full dependencies (Flask / training)
+pip install -r requirements-flask.txt
 
 # 2. Train model
 python main.py --train --dataset orl --method hybrid --optimizer adam --activation softmax
@@ -65,15 +65,21 @@ http://localhost:5000
 ### Streamlit app (recommended for free hosting)
 
 ```bash
-pip install -r requirements-streamlit.txt
+pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
+For Flask / full training stack locally:
+```bash
+pip install -r requirements-flask.txt
+python app.py
+```
+
 Deploy on [Streamlit Community Cloud](https://share.streamlit.io):
-1. Push this repo to GitHub
-2. New app → select repo
-3. Main file: `streamlit_app.py`
-4. Python requirements: `requirements-streamlit.txt`
+1. New app → select this repo → main file `streamlit_app.py`
+2. Python version: **3.11** (or 3.10)
+3. Leave requirements as default `requirements.txt` (Cloud-friendly, no TensorFlow)
+4. Reboot the app after this fix if a previous install failed
 
 ---
 
