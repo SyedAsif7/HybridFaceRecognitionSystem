@@ -1,0 +1,101 @@
+{
+  "paper_results": [
+    {
+      "method": "SIFT + CNN",
+      "optimizer": "Adam",
+      "activation": "softmax",
+      "orl_acc": "92.5%",
+      "sheffield_acc": "100.0%",
+      "best": true
+    },
+    {
+      "method": "SIFT + CNN",
+      "optimizer": "Adamax",
+      "activation": "softmax",
+      "orl_acc": "91.2%",
+      "sheffield_acc": "98.2%",
+      "best": false
+    },
+    {
+      "method": "HOG + CNN",
+      "optimizer": "Adam",
+      "activation": "softmax",
+      "orl_acc": "88.7%",
+      "sheffield_acc": "96.1%",
+      "best": false
+    },
+    {
+      "method": "Gabor + CNN",
+      "optimizer": "Adam",
+      "activation": "softmax",
+      "orl_acc": "86.3%",
+      "sheffield_acc": "94.5%",
+      "best": false
+    },
+    {
+      "method": "Canny + CNN",
+      "optimizer": "Adam",
+      "activation": "softmax",
+      "orl_acc": "84.1%",
+      "sheffield_acc": "92.0%",
+      "best": false
+    },
+    {
+      "method": "SIFT + CNN",
+      "optimizer": "Adam",
+      "activation": "sigmoid",
+      "orl_acc": "90.0%",
+      "sheffield_acc": "98.2%",
+      "best": false
+    },
+    {
+      "method": "SIFT + CNN",
+      "optimizer": "RMSprop",
+      "activation": "softmax",
+      "orl_acc": "89.5%",
+      "sheffield_acc": "97.8%",
+      "best": false
+    },
+    {
+      "method": "SIFT + CNN",
+      "optimizer": "SGD",
+      "activation": "softmax",
+      "orl_acc": "85.0%",
+      "sheffield_acc": "93.5%",
+      "best": false
+    },
+    {
+      "method": "HOG + CNN",
+      "optimizer": "Adamax",
+      "activation": "softmax",
+      "orl_acc": "87.5%",
+      "sheffield_acc": "95.6%",
+      "best": false
+    },
+    {
+      "method": "PCA + SVM",
+      "optimizer": "\u2014",
+      "activation": "\u2014",
+      "orl_acc": "85.0%",
+      "sheffield_acc": "91.0%",
+      "best": false
+    }
+  ],
+  "proposed": [
+    {
+      "method": "MobileNetV2 + SIFT+HOG+Gabor + Adam + Softmax"
+    },
+    {
+      "method": "Full Hybrid (SIFT+HOG+Gabor+Canny) + Custom CNN"
+    },
+    {
+      "method": "Center Loss + Hybrid CNN"
+    },
+    {
+      "method": "SVM RBF on Hybrid Features"
+    },
+    {
+      "method": "SVM Linear on Hybrid Features"
+    }
+  ]
+}

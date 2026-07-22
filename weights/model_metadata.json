@@ -1,0 +1,51 @@
+{
+  "custom_cnn": {
+    "architecture": "Custom CNN + Feature Fusion (Hybrid)",
+    "paper": "Panchalwar Mam's Research \u2014 SSIEMS Parbhani",
+    "total_params": 10669928,
+    "input_image_shape": [
+      128,
+      128,
+      1
+    ],
+    "input_feature_dim": 8317,
+    "num_classes": 40,
+    "embedding_dim": 64,
+    "optimizer": "Adam",
+    "lr": 0.0001,
+    "batch_size": 16,
+    "epochs": 100,
+    "best_val_accuracy": 0.925,
+    "orl_test_accuracy": 0.925,
+    "sheffield_test_accuracy": 1.0,
+    "activation": "softmax",
+    "feature_fusion": "SIFT+HOG+Gabor (Research Fusion)",
+    "weights_file": "best_hybrid_model_weights.npz",
+    "keras_h5_equivalent": "best_hybrid_model.h5",
+    "load_instruction": "See load_weights_into_model.py"
+  },
+  "mobilenetv2": {
+    "architecture": "MobileNetV2 + Feature Fusion (Transfer Learning)",
+    "base_model": "MobileNetV2 pretrained on ImageNet",
+    "total_params": 5268072,
+    "input_image_shape": [
+      96,
+      96,
+      3
+    ],
+    "input_feature_dim": 8317,
+    "num_classes": 40,
+    "embedding_dim": 64,
+    "fine_tune_from_layer": 100,
+    "optimizer": "Adam",
+    "lr": 0.0001,
+    "batch_size": 16,
+    "epochs": 50,
+    "best_val_accuracy": 0.942,
+    "orl_test_accuracy": 0.942,
+    "activation": "softmax",
+    "weights_file": "best_mobilenetv2_model_weights.npz",
+    "keras_h5_equivalent": "best_mobilenetv2_model.h5",
+    "load_instruction": "See load_weights_into_model.py"
+  }
+}

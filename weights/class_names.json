@@ -1,0 +1,14 @@
+{
+  "class_names": [
+    "Alex Lacamoire",
+    "Leo Jackson",
+    "Salman Khan"
+  ],
+  "num_classes": 3,
+  "dataset": "Custom Face Database",
+  "feature_dim": 8317,
+  "img_size": [
+    128,
+    128
+  ]
+}

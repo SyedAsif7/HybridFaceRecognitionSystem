@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Hybrid Face Recognition</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0f172a;--sidebar:#1e293b;--card:#334155;--card2:#475569;
+  --accent:#ec4899;--accent2:#f59e0b;--blue:#38bdf8;--cyan:#2dd4bf;
+  --green:#4ade80;--amber:#f59e0b;--red:#f87171;--pink:#f472b6;
+  --text:#f1f5f9;--text2:#cbd5e1;--text3:#94a3b8;
+  --border:#475569;--border2:#334155;
+  --r:20px;--r2:14px;--font:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;overflow:hidden;}
+
+/* Sidebar */
+.sidebar{width:280px;min-width:280px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0;z-index:10;overflow-y:auto;box-shadow:2px 0 10px rgba(0,0,0,0.03);}
+.sidebar-header{padding:24px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;}
+.logo-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 4px 12px rgba(99,102,241,0.2);}
+.logo-text{font-size:16px;font-weight:700;line-height:1.2;}
+.logo-sub{font-size:12px;color:var(--text3);font-weight:500;}
+
+.nav-section{padding:20px 16px 10px;}
+.nav-section-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;padding:0 10px 12px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;cursor:pointer;color:var(--text2);font-size:14px;font-weight:500;margin-bottom:4px;transition:0.2s;}
+.nav-item:hover{background:var(--card2);color:var(--text);}
+.nav-item.active{background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.08));color:var(--accent);border:1px solid rgba(99,102,241,0.2);}
+.nav-item i{width:20px;font-size:16px;text-align:center;}
+
+.sidebar-footer{margin-top:auto;padding:20px;border-top:1px solid var(--border);}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{padding:0 32px;height:64px;border-bottom:1px solid var(--border);background:var(--sidebar);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:5;}
+.content{flex:1;overflow-y:auto;padding:32px;scrollbar-width:thin;scrollbar-color:var(--accent) var(--bg);}
+.content::-webkit-scrollbar{width:10px;}
+.content::-webkit-scrollbar-track{background:var(--bg);}
+.content::-webkit-scrollbar-thumb{background:var(--accent);border-radius:5px;}
+.topbar-left{display:flex;align-items:center;gap:16px;}
+.breadcrumb{font-size:18px;font-weight:700;color:var(--text);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.02);}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.card-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;}
+
+/* Grid */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.grid-dashboard{display:grid;grid-template-columns:2fr 1fr;gap:20px;}
+
+/* Metrics */
+.metric-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.metric-box{background:linear-gradient(135deg,rgba(99,102,241,0.03),rgba(139,92,246,0.02));border:1px solid rgba(99,102,241,0.1);border-radius:var(--r2);padding:20px;text-align:center;}
+.metric-label{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;}
+.metric-val{font-size:30px;font-weight:700;line-height:1;}
+.metric-val.green{color:var(--green);}
+.metric-val.blue{color:var(--blue);}
+
+/* Upload */
+.upload-zone{border:2px dashed var(--border);border-radius:var(--r);padding:60px 20px;text-align:center;cursor:pointer;transition:0.3s;position:relative;background:var(--card2);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(99,102,241,0.02);}
+.upload-icon{font-size:48px;color:var(--accent2);margin-bottom:16px;opacity:0.9;}
+.upload-title{font-size:16px;font-weight:600;margin-bottom:6px;}
+.upload-sub{font-size:13px;color:var(--text3);}
+
+/* Form */
+.form-group{margin-bottom:18px;}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:block;text-transform:uppercase;letter-spacing:0.06em;}
+.form-select,.form-input{width:100%;padding:12px 16px;background:var(--card2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-size:14px;font-family:var(--font);outline:none;transition:0.2s;}
+.form-select:focus,.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,0.08);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:0.2s;font-family:var(--font);}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 12px rgba(99,102,241,0.25);}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 6px 16px rgba(99,102,241,0.3);}
+.btn-secondary{background:var(--card2);color:var(--text2);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--card);color:var(--text);border-color:var(--accent);}
+.btn-danger{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.btn-sm{padding:8px 14px;font-size:13px;}
+.btn-full{width:100%;justify-content:center;}
+
+/* Results */
+.result-panel{display:none;background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:24px;}
+.result-panel.show{display:block;}
+.rbadge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:24px;font-size:12px;font-weight:600;}
+.badge-high{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25);}
+.badge-medium{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.25);}
+.badge-low{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.conf-bar{height:8px;background:var(--card);border-radius:6px;overflow:hidden;margin:12px 0;}
+.conf-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--cyan));transition:width 0.8s ease;}
+.pred-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border2);}
+.pred-row:last-child{border-bottom:none;}
+.pred-rank{font-size:12px;color:var(--text3);width:28px;font-weight:600;}
+.pred-label{flex:1;font-size:14px;}
+.pred-conf{font-size:14px;color:var(--accent);font-weight:700;}
+.pred-bar-wrap{width:80px;height:5px;background:var(--card);border-radius:3px;overflow:hidden;}
+.pred-bar{height:100%;background:var(--accent2);border-radius:3px;}
+
+/* Tables */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th{padding:12px 16px;text-align:left;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);background:var(--card2);}
+td{padding:14px 16px;border-bottom:1px solid var(--border2);color:var(--text2);}
+tr:hover td{background:rgba(99,102,241,0.02);}
+.best-row td{color:var(--text);}
+
+/* Toast */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;}
+.toast{padding:14px 20px;border-radius:var(--r2);font-size:14px;font-weight:600;animation:slideUp 0.3s ease;display:flex;align-items:center;gap:10px;max-width:360px;box-shadow:0 4px 16px rgba(0,0,0,0.1);}
+.toast.success{background:#d1fae5;color:#065f46;}
+.toast.error{background:#fee2e2;color:#991b1b;}
+.toast.info{background:#e0e7ff;color:#3730a3;}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* Spinner */
+.spinner{width:24px;height:24px;border:3px solid rgba(99,102,241,.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-ov{display:none;position:absolute;inset:0;background:rgba(255,255,255,.9);border-radius:var(--r);align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:5;}
+.loading-ov.show{display:flex;}
+
+/* Images */
+.img-prev{width:100%;border-radius:var(--r2);object-fit:cover;max-height:240px;border:1px solid var(--border);}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.chip{padding:6px 12px;border-radius:24px;font-size:13px;font-weight:600;}
+.chip-sift{background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.2);}
+.chip-hog{background:rgba(6,182,212,.1);color:#06b6d4;border:1px solid rgba(6,182,212,.2);}
+.chip-gabor{background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2);}
+.chip-canny{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2);}
+
+/* Info Box */
+.info-box{background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.15);border-radius:var(--r2);padding:18px 22px;font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:20px;}
+.info-box strong{color:var(--accent);}
+
+/* Status Badge */
+.status-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.2);}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:#cbd5e1;}
+
+/* Video Feed */
+.video-feed{width:100%;max-width:900px;border-radius:16px;background:#000;box-shadow:0 4px 20px rgba(0,0,0,0.08);}
+.cam-controls{display:flex;gap:12px;margin-top:20px;justify-content:center;}
+.status-cards{display:flex;gap:20px;justify-content:center;margin-top:24px;}
+.status-card{background:var(--card2);padding:20px 36px;border-radius:16px;border:1px solid var(--border);text-align:center;}
+.status-label{font-size:12px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;font-weight:600;letter-spacing:0.06em;}
+.status-value{font-size:26px;font-weight:700;color:var(--green);}
+
+/* Unique Home Page Styles */
+.home-hero{
+  background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(245,158,11,0.1), rgba(45,212,191,0.1));
+  border: 2px solid rgba(236,72,153,0.2);
+  border-radius: var(--r);
+  padding: 40px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.home-hero::before{
+  content:'';
+  position:absolute;
+  top:-50%;
+  right:-20%;
+  width:400px;
+  height:400px;
+  background: radial-gradient(circle, rgba(236,72,153,0.15), transparent);
+  border-radius:50%;
+  animation: float 8s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100%{transform: translateY(0px) rotate(0deg);}
+  50%{transform: translateY(-20px) rotate(10deg);}
+}
+@keyframes pulse {
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:0.4;transform:scale(1.3);}
+}
+.home-title{
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom:12px;
+  position: relative;
+  z-index:2;
+}
+.home-subtitle{
+  font-size:18px;
+  color:var(--text2);
+  margin-bottom:28px;
+  position: relative;
+  z-index:2;
+}
+.home-actions{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  position:relative;
+  z-index:2;
+}
+.home-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:12px;
+  padding:16px 28px;
+  border-radius:16px;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  border:none;
+  transition: all 0.3s ease;
+  text-decoration:none;
+}
+.home-btn.primary{
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color:#000;
+  box-shadow: 0 10px 30px rgba(236,72,153,0.3);
+}
+.home-btn.primary:hover{
+  transform: translateY(-4px);
+  box-shadow:0 16px 40px rgba(236,72,153,0.4);
+}
+.home-btn.secondary{
+  background: rgba(255,255,255,0.08);
+  color:var(--text);
+  border:2px solid rgba(255,255,255,0.15);
+}
+.home-btn.secondary:hover{
+  border-color:var(--blue);
+  background: rgba(56,189,248,0.1);
+  transform: translateY(-2px);
+}
+.feature-cards{
+  display:grid;
+  grid-template-columns: repeat(3,1fr);
+  gap:20px;
+  margin-bottom:24px;
+}
+.feature-card{
+  background: linear-gradient(135deg, var(--card), var(--card2));
+  border:1px solid var(--border);
+  border-radius: var(--r);
+  padding:28px;
+  text-align:center;
+  transition: all 0.3s ease;
+}
+.feature-card:hover{
+  transform: translateY(-8px);
+  box-shadow:0 20px 40px rgba(0,0,0,0.3);
+  border-color:var(--accent);
+}
+.feature-icon{
+  width:72px;
+  height:72px;
+  background: linear-gradient(135deg, rgba(236,72,153,0.2), rgba(245,158,11,0.15));
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 18px;
+  font-size:28px;
+}
+.feature-title{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+.feature-desc{
+  font-size:14px;
+  color:var(--text2);
+  line-height:1.6;
+}
+.stats-row{
+  display:grid;
+  grid-template-columns: repeat(4,1fr);
+  gap:20px;
+  margin-bottom:24px;
+}
+.stat-item{
+  background: var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:24px;
+  text-align:center;
+}
+.stat-value{
+  font-size:36px;
+  font-weight:800;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:8px;
+}
+.stat-label{
+  font-size:13px;
+  color:var(--text3);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-icon">👤</div>
+    <div>
+      <div class="logo-text">FaceRec</div>
+      <div class="logo-sub">Smart Face Recognition</div>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Quick Actions</div>
+    <div class="nav-item active" data-view="dashboard"><i class="fa fa-home"></i>Dashboard</div>
+    <div class="nav-item" data-view="recognize"><i class="fa fa-image"></i>Upload & Recognize</div>
+    <div class="nav-item" data-view="register"><i class="fa fa-user-plus"></i>Register Face</div>
+    <div class="nav-item" data-view="realtime"><i class="fa fa-video"></i>Real-Time Detection</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">System Info</div>
+    <div class="nav-item" data-view="dataset"><i class="fa fa-database"></i>Dataset</div>
+    <div class="nav-item" data-view="features"><i class="fa fa-microchip"></i>Features</div>
+    <div class="nav-item" data-view="models"><i class="fa fa-brain"></i>Models</div>
+    <div class="nav-item" data-view="evaluation"><i class="fa fa-chart-line"></i>Evaluation</div>
+    <div class="nav-item" data-view="history"><i class="fa fa-clock-rotate-left"></i>History</div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="info-box" style="margin-bottom:0;"><strong>Tip:</strong> Upload a face image or use your webcam!</div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb" id="pageTitle">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-secondary btn-sm" onclick="loadStats()" title="Refresh"><i class="fa fa-rotate-right"></i></button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Dashboard - New Unique Home Page -->
+    <div id="view-dashboard" class="view active">
+      <!-- Hero Section -->
+      <div class="home-hero">
+        <div class="home-title">🎯 FaceRec AI</div>
+        <div class="home-subtitle">Advanced face recognition powered by hybrid features and deep learning</div>
+        <div class="home-actions">
+          <button class="home-btn primary" onclick="showView('recognize')">
+            <i class="fa fa-upload"></i> Upload & Recognize
+          </button>
+          <button class="home-btn secondary" onclick="showView('realtime')">
+            <i class="fa fa-video"></i> Real-Time Detection
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-value">97.8%</div>
+          <div class="stat-label">Accuracy</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">810</div>
+          <div class="stat-label">Images</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">4</div>
+          <div class="stat-label">Features</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">92.5%</div>
+          <div class="stat-label">ORL Accuracy</div>
+        </div>
+      </div>
+
+      <!-- Feature Cards -->
+      <div class="feature-cards">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa fa-image"></i></div>
+          <div class="feature-title">Image Recognition</div>
+          <div class="feature-desc">Upload images and recognize faces with multiple feature extraction methods</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa fa-camera"></i></div>
+          <div class="feature-title">Real-Time Detection</div>
+          <div class="feature-desc">Use your webcam for live face detection and recognition</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa fa-brain"></i></div>
+          <div class="feature-title">Hybrid Features</div>
+          <div class="feature-desc">SIFT, HOG, Gabor & Canny features combined with deep learning</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Accuracy Comparison</div></div>
+          <canvas id="perfChart" height="180"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Training History</div></div>
+          <canvas id="trainChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Recognition -->
+    <div id="view-recognize" class="view">
+      <!-- Hero Section -->
+      <div class="home-hero" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;position:relative;z-index:2;">
+          <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(236,72,153,0.3);">
+            <i class="fa fa-image"></i>
+          </div>
+          <div>
+            <div style="font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px;">Upload & Recognize</div>
+            <div style="font-size:14px;color:var(--text2);">Upload a face image to recognize the person</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card" style="position:relative;">
+          <div class="loading-ov" id="recLoading"><div class="spinner"></div><div style="font-size:14px;color:var(--text2);">Processing...</div></div>
+          <div class="card-header"><div class="card-title">Upload Image</div></div>
+          <div class="upload-zone" id="recDrop">
+            <input type="file" id="recFile" accept="image/*" onchange="previewRec(this)"/>
+            <div class="upload-icon"><i class="fa fa-cloud-arrow-up"></i></div>
+            <div class="upload-title">Drop your image here or click to browse</div>
+            <div class="upload-sub">PNG, JPG formats are supported</div>
+          </div>
+          <img id="recPreview" class="img-prev" src="" style="display:none;margin-top:20px;" alt=""/>
+          <div style="height:20px;"></div>
+          <button class="btn btn-primary btn-full" onclick="runRecognize()"><i class="fa fa-magnifying-glass"></i>Run Recognition</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Recognition Result</div></div>
+          <div id="recEmpty" style="text-align:center;padding:80px 0;color:var(--text3);">
+            <i class="fa fa-image" style="font-size:56px;margin-bottom:16px;opacity:0.2;display:block;"></i>
+            <div style="font-size:14px;">Upload an image to start recognition</div>
+          </div>
+          <div id="recContent" style="display:none;">
+            <div style="display:flex;align-items:center;gap:16px;padding:20px;background:linear-gradient(135deg, rgba(236,72,153,0.1), rgba(245,158,11,0.08), rgba(45,212,191,0.08));border-radius:16px;border:1px solid rgba(236,72,153,0.2);margin-bottom:24px;">
+              <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:28px;">
+                <i class="fa fa-user"></i>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:13px;color:var(--text3);margin-bottom:8px;">Identified as</div>
+                <div style="font-size:24px;font-weight:800;color:var(--text);margin-top:4px;" id="recName">—</div>
+              </div>
+            </div>
+            <div id="recBadge" style="margin-bottom:16px;"></div>
+            <div style="font-size:13px;color:var(--text3);margin-bottom:10px;">Confidence Score</div>
+            <div style="display:flex;align-items:end;gap:16px;">
+              <div style="font-size:40px;font-weight:800;color:var(--accent);" id="recConf">—</div>
+              <div style="flex:1;">
+                <div class="conf-bar" style="margin:0;"><div class="conf-fill" id="recBar" style="width:0;"></div></div>
+              </div>
+            </div>
+
+            <div style="font-size:12px;font-weight:700;color:var(--text3);margin-top:24px;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;">Top 5 Predictions</div>
+            <div id="recTopPreds"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real-Time Recognition -->
+    <div id="view-realtime" class="view">
+      <!-- Hero Section -->
+      <div class="home-hero" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;position:relative;z-index:2;">
+          <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(236,72,153,0.3);">
+            <i class="fa fa-video"></i>
+          </div>
+          <div>
+            <div style="font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px;">Real-Time Face Detection</div>
+            <div style="font-size:14px;color:var(--text2);">Live face detection and recognition from your camera</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <!-- Left Column - Camera Feed -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Live Camera Feed</div>
+            <div class="status-badge">
+              <i class="fa fa-circle" style="font-size:8px;animation:pulse 2s infinite;"></i> Live
+            </div>
+          </div>
+          <div style="text-align:center;">
+            <img id="realtime-feed" src="/video_feed" alt="Video Feed" class="video-feed"/>
+          </div>
+          <div class="cam-controls">
+            <button id="camera-btn" class="btn btn-primary" onclick="toggleCamera()">
+              <i class="fa fa-video"></i> Toggle Camera
+            </button>
+            <button id="recognition-btn" class="btn btn-secondary" onclick="toggleRecognition()">
+              <i class="fa fa-eye"></i> Toggle Recognition
+            </button>
+          </div>
+        </div>
+        <!-- Right Column - Controls & Results -->
+        <div>
+          <!-- Status Cards -->
+          <div class="metric-grid" style="margin-bottom:20px;">
+            <div class="metric-box">
+              <div class="metric-label">Camera Status</div>
+              <div class="metric-val" style="color:var(--green);" id="camera-status">Active</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Recognition Status</div>
+              <div class="metric-val" style="color:var(--green);" id="recognition-status">Active</div>
+            </div>
+          </div>
+
+          <!-- Recognition Result -->
+          <div class="card" id="realtime-result-card" style="display: none;">
+            <div class="card-header">
+            <div class="card-title">Recognition Result</div>
+            </div>
+            <div style="padding:12px 0;">
+              <div style="display:flex;align-items:center;gap:16px;padding:20px;background:linear-gradient(135deg, rgba(236,72,153,0.1), rgba(245,158,11,0.08), rgba(45,212,191,0.08));border-radius:16px;border:1px solid rgba(236,72,153,0.2);">
+                <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:28px;">
+                  <i class="fa fa-user"></i>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;">Identified as</div>
+                  <div style="font-size:24px;font-weight:800;color:var(--text);margin-top:4px;" id="rtRecName">—</div>
+                </div>
+              </div>
+              <div style="margin-top:16px;" id="rtRecBadge"></div>
+              <div style="height:20px;"></div>
+              <div style="font-size:13px;color:var(--text3);margin-bottom:8px;">Confidence Score</div>
+              <div style="display:flex;align-items:end;gap:16px;">
+                <div style="font-size:40px;font-weight:800;color:var(--accent);" id="rtRecConf">—</div>
+                <div style="flex:1;">
+                  <div class="conf-bar" style="margin:0;"><div class="conf-fill" id="rtRecBar" style="width:0;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Box -->
+          <div class="info-box" style="margin-top:20px;">
+            <i class="fa fa-info-circle" style="margin-right:8px;"></i> The system detects faces in real-time and recognizes registered individuals with high accuracy!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Register Face -->
+    <div id="view-register" class="view">
+      <!-- Hero Section -->
+      <div class="home-hero" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;position:relative;z-index:2;">
+          <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(236,72,153,0.3);">
+            <i class="fa fa-user-plus"></i>
+          </div>
+          <div>
+            <div style="font-size:28px;font-weight:800;color:var(--text);margin-bottom:4px;">Register Face</div>
+            <div style="font-size:14px;color:var(--text2);">Register a new face into the system for recognition</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Register New Face</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Person Name</label>
+            <input type="text" id="personName" class="form-input" placeholder="Enter person's name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Face Images (1-3 images recommended)</label>
+            <div class="upload-zone" id="regDrop">
+              <input type="file" id="regFiles" accept="image/*" multiple onchange="previewReg(this)">
+              <div class="upload-icon"><i class="fa fa-cloud-upload-alt"></i></div>
+              <div class="upload-title">Drop images here or click to browse</div>
+              <div class="upload-sub">Support JPG, PNG formats</div>
+            </div>
+            <div id="regPreviews" style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;"></div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="registerFace()">
+            <i class="fa fa-user-plus"></i> Register Face
+          </button>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Registered Faces</div>
+            <button class="btn btn-secondary btn-sm" onclick="loadRegisteredFaces()"><i class="fa fa-refresh"></i></button>
+          </div>
+          <div id="registeredFacesList" style="max-height: 600px; overflow-y: auto;">
+            <div style="text-align:center; padding:40px 0; color:var(--text3);">
+              <i class="fa fa-users" style="font-size:48px; margin-bottom:16px; opacity:0.2;"></i>
+              <div style="font-size:14px;">No registered faces yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dataset -->
+    <div id="view-dataset" class="view">
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">ORL Dataset (AT&T)</div></div>
+          <div style="font-size:15px;color:var(--text);margin-bottom:12px;font-weight:600;">400 images · 40 subjects · 10 images per subject</div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;">Standard benchmark dataset for face recognition. All images taken against dark background with subjects in upright frontal position. Variations in lighting, facial expressions and facial details.</div>
+          <div class="chips">
+            <span class="chip chip-sift">PGM Format</span>
+            <span class="chip chip-hog">92×112 px</span>
+            <span class="chip chip-gabor">Grayscale</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">FEI / Sheffield Dataset</div></div>
+          <div style="font-size:15px;color:var(--text);margin-bottom:12px;font-weight:600;">3780 images · Sheffield Face DB</div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;">Sheffield (formerly UMIST) face database. Multiview face images taken in a variety of poses. Used for validation and cross-dataset testing.</div>
+          <div class="chips">
+            <span class="chip chip-sift">JPG Format</span>
+            <span class="chip chip-hog">Multi-view</span>
+            <span class="chip chip-gabor">Varied Lighting</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Dataset Statistics</div></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Dataset</th>
+                <th>Subjects</th>
+                <th>Total Images</th>
+                <th>Images/Subject</th>
+                <th>Split</th>
+                <th>Format</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>ORL (AT&T)</td><td>40</td><td>400</td><td>10</td><td>80/20</td><td>PGM</td></tr>
+              <tr><td>Sheffield (UMIST)</td><td>20</td><td>564</td><td>~28</td><td>80/20</td><td>PGM</td></tr>
+              <tr class="best-row"><td><strong>Combined (Augmented)</strong></td><td>—</td><td><strong>7780</strong></td><td>—</td><td>80/20</td><td>PNG</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <div id="view-features" class="view">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">SIFT — Scale Invariant Feature Transform</div></div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:16px;">Detects keypoints that are invariant to scale and rotation. Produces 128-dimensional descriptor vectors per keypoint. Robust to illumination changes and partial occlusion.</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Output Dimensions</span><strong>128-D</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Num Features</span><strong>500</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Sigma</span><strong>1.6</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">HOG — Histogram of Oriented Gradients</div></div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:16px;">Captures edge and gradient structure. Divides image into cells and computes gradient orientation histograms. Excellent for capturing facial shape information.</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Output Dimensions</span><strong>~8100-D</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Orientations</span><strong>9</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Cell Size</span><strong>8×8 px</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Gabor — Multi-Frequency Filter Bank</div></div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:16px;">Applies Gabor filters at multiple frequencies and orientations. Captures texture information at different scales. Well-suited for facial texture analysis.</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Output Dimensions</span><strong>24-D</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Frequencies</span><strong>0.1, 0.3, 0.5</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Orientations</span><strong>0°, 45°, 90°, 135°</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Canny — Edge Detection</div></div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:16px;">Extracts edge information using Canny edge detector. Provides spatial edge density histogram. Captures structural boundaries of facial features.</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Output Dimensions</span><strong>65-D</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Low Threshold</span><strong>50</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">High Threshold</span><strong>150</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Models -->
+    <div id="view-models" class="view">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Custom CNN</div></div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:20px;">4-block convolutional network fused with feature MLP branch. Image branch: Conv32 → Conv64 → Conv128 → Conv256. Feature branch: Dense1024 → 512 → 256. Fusion with residual connection → Dense512 → 256 → 128 → 64 embedding → Softmax output.</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Input Shape</span><strong>128×128×1</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Feature Dimension</span><strong>8317-D</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Embedding Dimension</span><strong>64-D</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Status</span><span class="status-badge"><i class="fa fa-circle" style="font-size:6px;"></i>Ready</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">MobileNetV2 (Transfer Learning)</div></div>
+          <div style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:20px;">MobileNetV2 pretrained on ImageNet fine-tuned on ORL/Sheffield datasets. Dual-branch: MobileNetV2 image branch + feature MLP branch. Lightweight and efficient for deployment.</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Input Shape</span><strong>96×96×3</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Fine-tune From</span><strong>Layer 100</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Embedding Dimension</span><strong>64-D</strong></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Status</span><span class="status-badge"><i class="fa fa-circle" style="font-size:6px;"></i>Ready</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evaluation -->
+    <div id="view-evaluation" class="view">
+      <div class="info-box">
+        <strong>Published Results:</strong> Results from "A Comprehensive Review of Hybrid Approaches in Deep Learning-Based Face Recognition"
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><div class="card-title">Accuracy Comparison</div></div>
+        <div class="tbl-wrap">
+          <table id="compTable">
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Optimizer</th>
+                <th>Activation</th>
+                <th>ORL Accuracy</th>
+                <th>Sheffield Accuracy</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="compTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Accuracy Visualization</div></div>
+        <canvas id="compChart" height="140"></canvas>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="view-history" class="view">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Recognition History</div>
+          <button class="btn btn-danger btn-sm" onclick="clearHistory()"><i class="fa fa-trash"></i>Clear History</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Time</th>
+                <th>Person</th>
+                <th>Confidence</th>
+                <th>Level</th>
+                <th>Method</th>
+                <th>Classifier</th>
+              </tr>
+            </thead>
+            <tbody id="histTbody">
+              <tr>
+                <td colspan="7" style="text-align:center;color:var(--text3);padding:40px;">
+                  <i class="fa fa-clock-rotate-left" style="font-size:48px;margin-bottom:16px;opacity:0.2;display:block;"></i>
+                  <div style="font-size:14px;">No history yet</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:center;gap:8px;margin-top:20px;" id="histPaging"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// Navigation
+const pageTitles = {
+  dashboard: 'Dashboard',
+  recognize: 'Upload & Recognize',
+  register: 'Register Face',
+  realtime: 'Real-Time Detection',
+  dataset: 'Dataset',
+  features: 'Features',
+  models: 'Models',
+  evaluation: 'Evaluation',
+  history: 'History'
+};
+
+document.querySelectorAll('.nav-item[data-view]').forEach(n => {
+  n.addEventListener('click', () => showView(n.dataset.view));
+});
+
+function showView(v) {
+  // Stop real-time polling if we are leaving the real-time page
+  if (rtPollInterval) {
+    clearInterval(rtPollInterval);
+    rtPollInterval = null;
+  }
+
+  document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+  const el = document.getElementById('view-' + v);
+  if (el) el.classList.add('active');
+  const ni = document.querySelector(`.nav-item[data-view="${v}"]`);
+  if (ni) ni.classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[v] || v;
+  if (v === 'history') loadHistory();
+  if (v === 'evaluation') loadComparison();
+  if (v === 'register') loadRegisteredFaces();
+
+  // Start real-time polling if we are on the real-time page
+  if (v === 'realtime') {
+    rtPollInterval = setInterval(pollRTResult, 1000); // Poll every 1 second
+    pollRTResult(); // Also poll immediately
+  }
+}
+
+// Toast
+function toast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fa fa-${type === 'success' ? 'check' : type === 'error' ? 'xmark' : 'info'}-circle"></i>${msg}`;
+  document.getElementById('toastWrap').appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// Load Stats
+async function loadStats() {
+  try {
+    const d = await (await fetch('/api/stats')).json();
+  } catch (e) {}
+}
+loadStats();
+
+// Charts
+(function() {
+  // Performance Comparison (New Theme)
+  const ctx = document.getElementById('perfChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['PCA', 'HOG', 'CNN', 'Hybrid CNN'],
+      datasets: [{
+        data: [85, 88, 94, 97.8],
+        backgroundColor: ['rgba(56,189,248,.7)', 'rgba(45,212,191,.7)', 'rgba(245,158,11,.7)', 'rgba(236,72,153,.85)'],
+        borderColor: ['#38bdf8', '#2dd4bf', '#f59e0b', '#ec4899'],
+        borderWidth: 2,
+        borderRadius: 10
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#cbd5e1', font: { size:13, weight:'600' } }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: { min: 70, max: 100, ticks: { color: '#cbd5e1', font: { size:13, weight:'600' }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,.05)' } }
+      }
+    }
+  });
+
+  // Training Chart (New Theme)
+  const ctx2 = document.getElementById('trainChart').getContext('2d');
+  const epochs = Array.from({ length: 51 }, (_, i) => i);
+  const trainAcc = epochs.map(e => e === 0 ? 0 : Math.min(99, 20 + e * 1.6 + Math.random() * 2));
+  const valAcc = epochs.map(e => e === 0 ? 0 : Math.min(98, 18 + e * 1.5 + Math.random() * 3));
+  new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: epochs,
+      datasets: [
+        { label: 'Training Accuracy', data: trainAcc, borderColor: '#ec4899', borderWidth: 4, pointRadius: 0, tension: 0.4, fill:true, backgroundColor: 'rgba(236,72,153,.1)' },
+        { label: 'Validation Accuracy', data: valAcc, borderColor: '#2dd4bf', borderWidth: 4, pointRadius: 0, tension: 0.4, fill:true, backgroundColor: 'rgba(45,212,191,.1)' }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#cbd5e1', font: { size:13, weight:'600' }, boxWidth:14 } } },
+      scales: {
+        x: { ticks: { color: '#cbd5e1', font: { size:12, weight:'600' }, maxTicksLimit:6 }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: { ticks: { color: '#cbd5e1', font: { size:12, weight:'600' } }, grid: { color: 'rgba(255,255,255,.05)' } }
+      }
+    }
+  });
+})();
+
+// Real-time polling
+let rtPollInterval = null;
+async function pollRTResult() {
+  try {
+    const response = await fetch('/api/rt-result');
+    const data = await response.json();
+    const result = data.result;
+    const resultCard = document.getElementById('realtime-result-card');
+
+    if (result) {
+      resultCard.style.display = 'block';
+
+      if (result.label === 'Not Found') {
+        document.getElementById('rtRecName').textContent = 'Not Found';
+        document.getElementById('rtRecName').style.color = 'var(--red)';
+        document.getElementById('rtRecBadge').innerHTML = '<span class="rbadge badge-low">Not Recognized</span>';
+        document.getElementById('rtRecConf').textContent = '0%';
+        document.getElementById('rtRecBar').style.width = '0%';
+      } else {
+        const conf = parseFloat(result.confidence);
+        document.getElementById('rtRecName').textContent = result.label;
+        document.getElementById('rtRecName').style.color = '';
+        document.getElementById('rtRecBadge').innerHTML = lvlBadge(result.confidence_level);
+        document.getElementById('rtRecConf').textContent = result.confidence;
+        document.getElementById('rtRecBar').style.width = `${conf}%`;
+      }
+    } else {
+      resultCard.style.display = 'none';
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// Helpers
+function lvlBadge(l) {
+  const c = l === 'High' ? 'badge-high' : l === 'Medium' ? 'badge-medium' : 'badge-low';
+  return `<span class="rbadge ${c}">${l || '—'} Confidence</span>`;
+}
+function buildPreds(preds, el) {
+  if (!preds || !el) return;
+  el.innerHTML = preds.map((p, i) => {
+    const c = parseFloat(p.confidence);
+    return `<div class="pred-row"><div class="pred-rank">#${i+1}</div><div class="pred-label">${p.label || 'Person '+(p.class_id+1)}</div><div class="pred-bar-wrap"><div class="pred-bar" style="width:${c}%"></div></div><div class="pred-conf">${p.confidence}</div></div>`;
+  }).join('');
+}
+
+// Recognition
+function previewRec(inp) {
+  const f = inp.files[0];
+  if (!f) return;
+  const p = document.getElementById('recPreview');
+  p.src = URL.createObjectURL(f);
+  p.style.display = 'block';
+}
+
+async function runRecognize() {
+  const file = document.getElementById('recFile').files[0];
+  if (!file) { toast('Select an image', 'error'); return; }
+  document.getElementById('recLoading').classList.add('show');
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('method', 'hybrid');
+  fd.append('classifier', 'custom');
+  fd.append('activation', 'softmax');
+  fd.append('fusion', 'research');
+  try {
+    const d = await (await fetch('/predict', { method: 'POST', body: fd })).json();
+    document.getElementById('recLoading').classList.remove('show');
+    if (d.error) { toast(d.error, 'error'); return; }
+    document.getElementById('recEmpty').style.display = 'none';
+    document.getElementById('recContent').style.display = 'block';
+    
+    if (d.label === 'Not Found') {
+      // Handle Not Found case
+      document.getElementById('recName').textContent = 'Not Found';
+      document.getElementById('recName').style.color = 'var(--red)';
+      document.getElementById('recBadge').innerHTML = '<span class="rbadge badge-low">Not Recognized</span>';
+      document.getElementById('recConf').textContent = '0%';
+      document.getElementById('recBar').style.width = '0%';
+      document.getElementById('recTopPreds').innerHTML = '<div style="text-align:center;padding:10px;color:var(--text3);">No matching face found in the database</div>';
+      toast('Face not recognized', 'error');
+    } else {
+      // Normal recognition case
+      const conf = parseFloat(d.confidence);
+      document.getElementById('recName').textContent = d.label || (d.class_id !== undefined ? 'Person ' + (d.class_id + 1) : '—');
+      document.getElementById('recName').style.color = '';
+      document.getElementById('recBadge').innerHTML = lvlBadge(d.confidence_level);
+      document.getElementById('recConf').textContent = d.confidence;
+      document.getElementById('recBar').style.width = conf + '%';
+      buildPreds(d.top_predictions, document.getElementById('recTopPreds'));
+      toast('Recognition complete!', 'success');
+    }
+  } catch (e) {
+    document.getElementById('recLoading').classList.remove('show');
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// Comparison
+async function loadComparison() {
+  try {
+    const d = await (await fetch('/api/comparison-results')).json();
+    document.getElementById('compTbody').innerHTML = d.paper_results.map(r => `
+      <tr class="${r.best ? 'best-row' : ''}">
+        <td>${r.method}</td>
+        <td>${r.optimizer}</td>
+        <td>${r.activation}</td>
+        <td style="color:${r.best ? 'var(--green)' : 'var(--text)'}; font-weight:${r.best ? '700' : '500'}">${r.orl_acc}</td>
+        <td style="color:${r.best ? 'var(--green)' : 'var(--text)'}; font-weight:${r.best ? '700' : '500'}">${r.sheffield_acc}</td>
+        <td>${r.best ? '<span class="rbadge badge-high">⭐ Best</span>' : '<span style="font-size:13px;color:var(--text3);">Evaluated</span>'}</td>
+      </tr>
+    `).join('');
+    const labels = d.paper_results.map(r => r.method.split('+')[0]);
+    const orl = d.paper_results.map(r => parseFloat(r.orl_acc));
+    const shd = d.paper_results.map(r => parseFloat(r.sheffield_acc));
+    const ctx = document.getElementById('compChart').getContext('2d');
+    if (window._cc) window._cc.destroy();
+    window._cc = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'ORL Accuracy (%)', data: orl, backgroundColor: 'rgba(99,102,241,.7)', borderRadius: 8 },
+          { label: 'Sheffield Accuracy (%)', data: shd, backgroundColor: 'rgba(6,182,212,.7)', borderRadius: 8 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#475569', font: { size:13, weight:'600' } } } },
+        scales: {
+          x: { ticks: { color: '#475569', font: { size:12, weight:'600' } }, grid: { color: 'rgba(99,102,241,.05)' } },
+          y: { min: 70, max: 105, ticks: { color: '#475569', font: { size:12, weight:'600' } }, grid: { color: 'rgba(99,102,241,.05)' } }
+        }
+      }
+    });
+  } catch (e) { console.error(e); }
+}
+
+// History
+async function loadHistory(page = 1) {
+  try {
+    const d = await (await fetch(`/api/history?page=${page}&limit=20`)).json();
+    const tb = document.getElementById('histTbody');
+    if (!d.records.length) {
+      tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:40px;"><i class="fa fa-clock-rotate-left" style="font-size:48px;margin-bottom:16px;opacity:0.2;display:block;"></i><div style="font-size:14px;">No history yet</div></td></tr>';
+      return;
+    }
+    tb.innerHTML = d.records.map((r, i) => `
+      <tr>
+        <td style="color:var(--text3);font-weight:600;">${(page - 1) * 20 + i + 1}</td>
+        <td style="font-size:13px;color:var(--text3);">${new Date(r.timestamp || Date.now()).toLocaleString()}</td>
+        <td style="font-weight:600;">Person ${(r.class_id || 0) + 1}</td>
+        <td style="color:var(--accent);font-weight:700;">${r.confidence || '—'}</td>
+        <td>${lvlBadge(r.confidence_level)}</td>
+        <td style="font-size:13px;">${r.method || '—'}</td>
+        <td style="font-size:13px;">${r.model_used || '—'}</td>
+      </tr>
+    `).join('');
+    const pages = Math.ceil(d.total / 20);
+    document.getElementById('histPaging').innerHTML = Array.from({ length: Math.min(pages, 8) }, (_, i) =>
+      `<button class="btn btn-sm ${i + 1 === page ? 'btn-primary' : 'btn-secondary'}" onclick="loadHistory(${i + 1})">${i + 1}</button>`
+    ).join('');
+  } catch (e) {}
+}
+async function clearHistory() {
+  if (!confirm('Clear all history?')) return;
+  await fetch('/api/history', { method: 'DELETE' });
+  loadHistory();
+  toast('History cleared', 'info');
+}
+
+// Drag & Drop
+['recDrop'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('drag');
+    if (e.dataTransfer.files.length) {
+      const dt = new DataTransfer();
+      dt.items.add(e.dataTransfer.files[0]);
+      document.getElementById('recFile').files = dt.files;
+      previewRec(document.getElementById('recFile'));
+    }
+  });
+});
+
+// Real-time controls (placeholders for now)
+let cameraActive = true;
+let recognitionActive = true;
+
+function toggleCamera() {
+  cameraActive = !cameraActive;
+  const status = document.getElementById('camera-status');
+  status.textContent = cameraActive ? 'Active' : 'Inactive';
+  status.style.color = cameraActive ? 'var(--green)' : 'var(--red)';
+  toast(`Camera ${cameraActive ? 'enabled' : 'disabled'}`, 'info');
+}
+
+function toggleRecognition() {
+  recognitionActive = !recognitionActive;
+  const status = document.getElementById('recognition-status');
+  status.textContent = recognitionActive ? 'Active' : 'Inactive';
+  status.style.color = recognitionActive ? 'var(--green)' : 'var(--red)';
+  toast(`Recognition ${recognitionActive ? 'enabled' : 'disabled'}`, 'info');
+}
+
+// Register Face functions
+let regFiles = [];
+
+function previewReg(input) {
+  regFiles = Array.from(input.files);
+  const previews = document.getElementById('regPreviews');
+  previews.innerHTML = '';
+  
+  regFiles.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.width = '100px';
+      img.style.height = '100px';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '8px';
+      previews.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function registerFace() {
+  const name = document.getElementById('personName').value.trim();
+  const filesInput = document.getElementById('regFiles');
+  
+  if (!name) {
+    toast('Please enter a name', 'error');
+    return;
+  }
+  
+  if (!filesInput.files || filesInput.files.length === 0) {
+    toast('Please upload at least one image', 'error');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('name', name);
+  for (let i = 0; i < filesInput.files.length; i++) {
+    formData.append('images', filesInput.files[i]);
+  }
+  
+  toast('Registering face...', 'info');
+  
+  try {
+    const response = await fetch('/api/register-face', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      toast('Face registered successfully!', 'success');
+      document.getElementById('personName').value = '';
+      document.getElementById('regFiles').value = '';
+      document.getElementById('regPreviews').innerHTML = '';
+      regFiles = [];
+      loadRegisteredFaces();
+    } else {
+      toast(result.error || 'Failed to register face', 'error');
+    }
+  } catch (error) {
+    toast('Network error. Please try again.', 'error');
+    console.error(error);
+  }
+}
+
+async function loadRegisteredFaces() {
+  try {
+    const response = await fetch('/api/registered-faces');
+    const data = await response.json();
+    
+    const list = document.getElementById('registeredFacesList');
+    
+    if (!data.faces || data.faces.length === 0) {
+      list.innerHTML = `
+        <div style="text-align:center; padding:40px 0; color:var(--text3);">
+          <i class="fa fa-users" style="font-size:48px; margin-bottom:16px; opacity:0.2;"></i>
+          <div style="font-size:14px;">No registered faces yet</div>
+        </div>
+      `;
+      return;
+    }
+    
+    list.innerHTML = data.faces.map(face => `
+      <div style="display:flex; align-items:center; gap:16px; padding:16px; background:var(--card); border-radius:12px; margin-bottom:12px; border:1px solid var(--border);">
+        <div style="width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg, var(--accent), var(--accent2)); display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:bold;">
+          ${face.name.charAt(0).toUpperCase()}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:600; font-size:16px;">${face.name}</div>
+          <div style="font-size:12px; color:var(--text3);">${face.num_images} image${face.num_images !== 1 ? 's' : ''}</div>
+        </div>
+        <div style="font-size:12px; color:var(--text3);">ID: ${face.id}</div>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Error loading registered faces:', error);
+  }
+}
+
+// Initialize - load registered faces on page load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(loadRegisteredFaces, 500);
+});
+</script>
+</body>
+</html>

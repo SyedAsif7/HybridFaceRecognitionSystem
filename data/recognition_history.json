@@ -1,0 +1,262 @@
+[
+  {
+    "class_id": 2,
+    "label": "Leo Jackson",
+    "confidence": "93.47%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 2,
+        "label": "Leo Jackson",
+        "confidence": "93.47%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-07-22T19:51:47.343609",
+    "source": "upload"
+  },
+  {
+    "class_id": 3,
+    "label": "Salman Khan",
+    "confidence": "95.23%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 3,
+        "label": "Salman Khan",
+        "confidence": "95.23%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-07-22T19:51:38.427267",
+    "source": "upload"
+  },
+  {
+    "class_id": 3,
+    "label": "Salman Khan",
+    "confidence": "100.00%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 3,
+        "label": "Salman Khan",
+        "confidence": "100.00%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-07-22T19:51:30.406743",
+    "source": "upload"
+  },
+  {
+    "class_id": 2,
+    "label": "Leo Jackson",
+    "confidence": "100.00%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 2,
+        "label": "Leo Jackson",
+        "confidence": "100.00%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-07-22T19:51:23.496816",
+    "source": "upload"
+  },
+  {
+    "class_id": 3,
+    "label": "Salman Khan",
+    "confidence": "95.23%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 3,
+        "label": "Salman Khan",
+        "confidence": "95.23%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-07-22T19:51:15.348023",
+    "source": "upload"
+  },
+  {
+    "class_id": 1,
+    "label": "Alex Lacamoire",
+    "confidence": "100.00%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 1,
+        "label": "Alex Lacamoire",
+        "confidence": "100.00%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-07-22T19:51:06.993529",
+    "source": "upload"
+  },
+  {
+    "class_id": 2,
+    "label": "Leo Jackson",
+    "confidence": "93.47%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 2,
+        "label": "Leo Jackson",
+        "confidence": "93.47%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-06-29T15:46:46.967496",
+    "source": "upload"
+  },
+  {
+    "class_id": 3,
+    "label": "Salman Khan",
+    "confidence": "100.00%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 3,
+        "label": "Salman Khan",
+        "confidence": "100.00%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-06-29T15:46:39.255980",
+    "source": "upload"
+  },
+  {
+    "class_id": 2,
+    "label": "Leo Jackson",
+    "confidence": "100.00%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 2,
+        "label": "Leo Jackson",
+        "confidence": "100.00%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-06-29T15:46:29.215924",
+    "source": "upload"
+  },
+  {
+    "class_id": 3,
+    "label": "Salman Khan",
+    "confidence": "95.23%",
+    "confidence_level": "High",
+    "top_predictions": [
+      {
+        "class_id": 3,
+        "label": "Salman Khan",
+        "confidence": "95.23%"
+      }
+    ],
+    "feature_count": 8317,
+    "method": "custom_faces",
+    "fusion_type": "research",
+    "activation": "N/A",
+    "model_used": "Custom Face Database (Hybrid Features)",
+    "feature_breakdown": {
+      "SIFT": "128-dim",
+      "HOG": "~8100-dim",
+      "Gabor": "24-dim",
+      "Canny": "65-dim"
+    },
+    "timestamp": "2026-06-29T15:46:18.875385",
+    "source": "upload"
+  }
+]

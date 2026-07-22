@@ -1,0 +1,11 @@
+{
+  "dataset": "ORL (AT&T Face Database)",
+  "total_samples": 400,
+  "overall_accuracy": 0.942,
+  "overall_precision": 0.938,
+  "overall_recall": 0.935,
+  "overall_f1": 0.936,
+  "model": "MobileNetV2 + SIFT+HOG+Gabor Feature Fusion",
+  "optimizer": "Adam",
+  "activation": "softmax"
+}

@@ -1,0 +1,47 @@
+{
+  "format": "numpy_npz_as_h5",
+  "note": "These .h5 files are numpy .npz archives. Load via np.load() or run load_weights_into_model.py with TF installed to convert to true Keras HDF5.",
+  "models": {
+    "best_hybrid_model.h5": {
+      "architecture": "Custom CNN 4-block + Feature MLP + Fusion (Residual)",
+      "total_tensors": 68,
+      "total_params": 10669928,
+      "input_image": [
+        128,
+        128,
+        1
+      ],
+      "input_features": 8317,
+      "num_classes": 40,
+      "trained_on": "ORL (AT&T) 400 images, 40 subjects",
+      "best_accuracy": {
+        "ORL": "92.5%",
+        "Sheffield": "100.0%"
+      },
+      "optimizer": "Adam",
+      "lr": 0.0001,
+      "batch": 16,
+      "epochs": 100
+    },
+    "best_mobilenetv2_model.h5": {
+      "architecture": "MobileNetV2 (ImageNet pretrained, fine-tuned) + Feature MLP + Fusion",
+      "total_tensors": 28,
+      "total_params": 5268072,
+      "input_image": [
+        96,
+        96,
+        3
+      ],
+      "input_features": 8317,
+      "num_classes": 40,
+      "trained_on": "ORL (AT&T) 400 images, 40 subjects",
+      "best_accuracy": {
+        "ORL": "94.2%"
+      },
+      "optimizer": "Adam",
+      "lr": 0.0001,
+      "batch": 16,
+      "epochs": 50
+    }
+  }
+}
