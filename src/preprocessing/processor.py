@@ -25,6 +25,34 @@ def _cascade_path(filename: str) -> str:
     )
 
 
+def _face_cascade():
+    if not hasattr(cv2, "CascadeClassifier"):
+        raise RuntimeError(
+            f"OpenCV build missing CascadeClassifier (cv2 {getattr(cv2, '__version__', '?')}). "
+            "Install opencv-python-headless<5."
+        )
+    cascade = cv2.CascadeClassifier(_cascade_path("haarcascade_frontalface_default.xml"))
+    if cascade.empty():
+        raise RuntimeError("Failed to load Haar cascade classifiers.")
+    return cascade
+
+
+def face_detected(image) -> bool:
+    """Return True when a frontal face is detected in the image."""
+    if image is None or not hasattr(image, "size") or image.size == 0:
+        return False
+
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image.copy()
+
+    faces = _face_cascade().detectMultiScale(
+        gray, scaleFactor=1.3, minNeighbors=5, minSize=(30, 30)
+    )
+    return len(faces) > 0
+
+
 def detect_and_align_face(image, target_size=(128, 128)):
     """
     Full pipeline:
@@ -40,10 +68,10 @@ def detect_and_align_face(image, target_size=(128, 128)):
             "Install opencv-python-headless<5."
         )
 
-    face_cascade = cv2.CascadeClassifier(_cascade_path("haarcascade_frontalface_default.xml"))
+    face_cascade = _face_cascade()
     eye_cascade = cv2.CascadeClassifier(_cascade_path("haarcascade_eye.xml"))
 
-    if face_cascade.empty() or eye_cascade.empty():
+    if eye_cascade.empty():
         raise RuntimeError("Failed to load Haar cascade classifiers.")
 
     if len(image.shape) == 3:

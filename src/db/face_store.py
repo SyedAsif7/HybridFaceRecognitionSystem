@@ -13,7 +13,14 @@ import cv2
 import numpy as np
 
 from src.features.extractors import extract_research_fusion
-from src.preprocessing.processor import detect_and_align_face
+from src.features.sift_matcher import (
+    MIN_MATCH_MARGIN,
+    MIN_SIFT_MATCHES,
+    extract_sift_descriptors,
+    matches_to_confidence,
+    pick_best_match,
+)
+from src.preprocessing.processor import detect_and_align_face, face_detected
 
 ROOT = Path(__file__).resolve().parents[2]
 FACES_DIR = ROOT / "Faces"
@@ -91,18 +98,219 @@ def _load_supabase() -> dict[str, Any]:
             "num_images": row["num_images"],
             "directory": row.get("image_folder") or "",
             "avg_encoding": row["avg_encoding"],
+            "sift_descriptors": row.get("sift_descriptors") or [],
             "storage": True,
         }
     return {"registered_faces": faces, "next_id": len(faces) + 1}
 
 
-def load_faces() -> dict[str, Any]:
+MATCH_THRESHOLD = 65.0  # legacy display only; recognition uses SIFT matching
+MIN_SIFT_MATCHES_REQUIRED = MIN_SIFT_MATCHES
+NOT_IDENTIFIED_LABEL = "Not Identified"
+NO_GALLERY_LABEL = "Not Found"
+
+
+def confidence_level(pct: float) -> str:
+    if pct >= 80:
+        return "High"
+    if pct >= 50:
+        return "Medium"
+    return "Low"
+
+
+def safe_load_faces() -> tuple[dict[str, Any], str | None]:
+    """Load faces; return (index, error_message). error_message is set only on failure."""
     if is_supabase_enabled():
         try:
-            return _load_supabase()
+            return _load_supabase(), None
         except Exception as exc:
-            raise RuntimeError(f"Supabase read failed: {exc}") from exc
-    return _load_local()
+            return {"registered_faces": {}, "next_id": 1}, f"Supabase read failed: {exc}"
+    return _load_local(), None
+
+
+def load_faces() -> dict[str, Any]:
+    index, err = safe_load_faces()
+    if err:
+        raise RuntimeError(err)
+    return index
+
+
+def _build_sift_descriptor_sets(aligned_images: list[np.ndarray]) -> list[list[list[float]]]:
+    sets: list[list[list[float]]] = []
+    for aligned in aligned_images:
+        desc = extract_sift_descriptors(aligned)
+        if desc:
+            sets.append(desc)
+    return sets
+
+
+def _sift_sets_from_local_images(directory: str) -> list[list[list[float]]]:
+    folder = ROOT / directory.replace("\\", "/")
+    if not folder.exists():
+        return []
+
+    sets: list[list[list[float]]] = []
+    for jpg in sorted(folder.glob("*.jpg")):
+        img = cv2.imread(str(jpg))
+        if img is None:
+            continue
+        aligned = detect_and_align_face(img)
+        desc = extract_sift_descriptors(aligned)
+        if desc:
+            sets.append(desc)
+    return sets
+
+
+def _sift_sets_from_supabase_images(folder: str, num_images: int) -> list[list[list[float]]]:
+    if not folder or not is_supabase_enabled():
+        return []
+
+    client = _get_client()
+    sets: list[list[list[float]]] = []
+    for idx in range(1, max(num_images, 1) + 1):
+        path = f"{folder}/{idx}.jpg"
+        try:
+            raw = client.storage.from_(BUCKET).download(path)
+        except Exception:
+            continue
+        arr = np.frombuffer(raw, dtype=np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        if img is None:
+            continue
+        aligned = detect_and_align_face(img)
+        desc = extract_sift_descriptors(aligned)
+        if desc:
+            sets.append(desc)
+    return sets
+
+
+def _descriptor_sets_for_person(data: dict[str, Any]) -> list[list[list[float]]]:
+    stored = data.get("sift_descriptors") or []
+    if stored:
+        return stored
+
+    if data.get("storage"):
+        rebuilt = _sift_sets_from_supabase_images(
+            data.get("directory", ""),
+            int(data.get("num_images") or 1),
+        )
+    else:
+        rebuilt = _sift_sets_from_local_images(data.get("directory", ""))
+
+    if rebuilt:
+        data["sift_descriptors"] = rebuilt
+    return rebuilt
+
+
+def recognize_face(image_bgr: np.ndarray, threshold: float = MATCH_THRESHOLD) -> dict:
+    """Align face, match against enrolled gallery, return result dict."""
+    if image_bgr is None or not hasattr(image_bgr, "size") or image_bgr.size == 0:
+        blank = np.zeros((128, 128), dtype=np.float64)
+        return {
+            "label": NOT_IDENTIFIED_LABEL,
+            "confidence": 0.0,
+            "level": "Low",
+            "found": False,
+            "aligned": blank,
+            "detail": "Image could not be read. Upload a valid JPG, PNG, or WEBP file.",
+        }
+
+    if not face_detected(image_bgr):
+        return {
+            "label": NOT_IDENTIFIED_LABEL,
+            "confidence": 0.0,
+            "level": "Low",
+            "found": False,
+            "aligned": detect_and_align_face(image_bgr),
+            "detail": "No face detected in the image. Use a clear front-facing photo.",
+        }
+
+    face = detect_and_align_face(image_bgr)
+    faces = load_faces().get("registered_faces", {})
+
+    if not faces:
+        return {
+            "label": NO_GALLERY_LABEL,
+            "confidence": 0.0,
+            "level": "Low",
+            "found": False,
+            "aligned": face,
+            "detail": "No faces are enrolled yet. Register a person first.",
+        }
+
+    query_desc = extract_sift_descriptors(face)
+    if not query_desc:
+        return {
+            "label": NOT_IDENTIFIED_LABEL,
+            "confidence": 0.0,
+            "level": "Low",
+            "found": False,
+            "aligned": face,
+            "detail": "Could not extract face features. Use a clearer, front-facing photo.",
+        }
+
+    candidates: list[tuple[str, Any, list[list[list[float]]]]] = []
+    for data in faces.values():
+        desc_sets = _descriptor_sets_for_person(data)
+        if desc_sets:
+            candidates.append((data["name"], data["id"], desc_sets))
+
+    if not candidates:
+        return {
+            "label": NO_GALLERY_LABEL,
+            "confidence": 0.0,
+            "level": "Low",
+            "found": False,
+            "aligned": face,
+            "detail": "No usable face data in the gallery. Re-register enrolled people.",
+        }
+
+    best_name, best_id, best_count, margin, ranked = pick_best_match(query_desc, candidates)
+    confidence = matches_to_confidence(best_count)
+
+    if best_name is None:
+        top_name, top_count = ranked[0] if ranked else ("—", 0)
+        if best_count < MIN_SIFT_MATCHES_REQUIRED:
+            detail = (
+                f"No strong match found (best: {top_name} with {best_count} keypoint matches, "
+                f"need {MIN_SIFT_MATCHES_REQUIRED}+)."
+            )
+        else:
+            detail = (
+                f"Match too close to call (best: {top_count} matches, margin {margin}, "
+                f"need {MIN_MATCH_MARGIN}+ gap)."
+            )
+        return {
+            "label": NOT_IDENTIFIED_LABEL,
+            "confidence": float(confidence),
+            "level": confidence_level(confidence),
+            "found": False,
+            "aligned": face,
+            "detail": detail,
+            "match_count": int(best_count),
+            "ranked": ranked,
+        }
+
+    return {
+        "label": best_name,
+        "id": best_id,
+        "confidence": float(confidence),
+        "level": confidence_level(confidence),
+        "found": True,
+        "aligned": face,
+        "detail": f"Matched with SIFT keypoints ({best_count} good matches, margin {margin}).",
+        "match_count": int(best_count),
+        "ranked": ranked,
+    }
+
+
+def _find_existing_name(client, name: str) -> dict | None:
+    rows = client.table(TABLE).select("id,name").execute().data or []
+    name_l = name.lower()
+    for row in rows:
+        if str(row.get("name", "")).lower() == name_l:
+            return row
+    return None
 
 
 def image_url(person: dict) -> str | None:
@@ -125,26 +333,34 @@ def register_person(name: str, images_bgr: list[np.ndarray]) -> tuple[bool, str]
     if not images_bgr:
         return False, "Add at least one image."
 
+    valid_images = [img for img in images_bgr if img is not None and getattr(img, "size", 0) > 0]
+    if not valid_images:
+        return False, "Image could not be read. Upload a valid JPG, PNG, or WEBP file."
+
     encodings: list[np.ndarray] = []
     aligned_images: list[np.ndarray] = []
 
-    for img in images_bgr:
-        aligned = detect_and_align_face(img)
-        if aligned is None:
+    for img in valid_images:
+        if not face_detected(img):
             continue
+        aligned = detect_and_align_face(img)
         aligned_images.append(aligned)
         encodings.append(extract_research_fusion(aligned))
 
     if not encodings:
-        return False, "No valid faces detected in the uploaded images."
+        return False, "Face not detected. Image could not be stored — use a clear front-facing photo."
 
     avg_encoding = np.mean(encodings, axis=0).tolist()
+    sift_sets = _build_sift_descriptor_sets(aligned_images)
+    if not sift_sets:
+        return False, "Could not extract face features from the images. Try clearer photos."
+
     slug = _slug(name)
     folder = slug
 
     if is_supabase_enabled():
-        return _register_supabase(name, slug, folder, aligned_images, avg_encoding, len(encodings))
-    return _register_local(name, slug, aligned_images, avg_encoding, len(encodings))
+        return _register_supabase(name, slug, folder, aligned_images, avg_encoding, sift_sets, len(encodings))
+    return _register_local(name, slug, aligned_images, avg_encoding, sift_sets, len(encodings))
 
 
 def _register_local(
@@ -152,6 +368,7 @@ def _register_local(
     slug: str,
     aligned_images: list[np.ndarray],
     avg_encoding: list[float],
+    sift_sets: list[list[list[float]]],
     n: int,
 ) -> tuple[bool, str]:
     index = _load_local()
@@ -181,6 +398,7 @@ def _register_local(
         "num_images": n,
         "directory": str(person_dir.relative_to(ROOT)).replace("\\", "/"),
         "avg_encoding": avg_encoding,
+        "sift_descriptors": sift_sets,
     }
     _save_local(index)
     return True, f"Registered {name} with {n} image(s)."
@@ -192,6 +410,7 @@ def _register_supabase(
     folder: str,
     aligned_images: list[np.ndarray],
     avg_encoding: list[float],
+    sift_sets: list[list[list[float]]],
     n: int,
 ) -> tuple[bool, str]:
     try:
@@ -206,21 +425,28 @@ def _register_supabase(
                 file_options={"content-type": "image/jpeg", "upsert": "true"},
             )
 
-        existing = (
-            client.table(TABLE).select("id").eq("name", name).limit(1).execute().data
-        )
+        existing = _find_existing_name(client, name)
 
         row = {
             "name": name,
             "num_images": n,
             "avg_encoding": avg_encoding,
             "image_folder": folder,
+            "sift_descriptors": sift_sets,
         }
 
         if existing:
-            client.table(TABLE).update(row).eq("id", existing[0]["id"]).execute()
+            try:
+                client.table(TABLE).update(row).eq("id", existing["id"]).execute()
+            except Exception:
+                row.pop("sift_descriptors", None)
+                client.table(TABLE).update(row).eq("id", existing["id"]).execute()
         else:
-            client.table(TABLE).insert(row).execute()
+            try:
+                client.table(TABLE).insert(row).execute()
+            except Exception:
+                row.pop("sift_descriptors", None)
+                client.table(TABLE).insert(row).execute()
 
         return True, f"Registered {name} with {n} image(s) — saved to Supabase."
     except Exception as exc:

@@ -18,6 +18,14 @@ from src.db.face_store import _get_client, is_supabase_enabled, BUCKET, TABLE  #
 INDEX = ROOT / "Faces" / "index.json"
 
 
+def _name_exists(client, name: str) -> bool:
+    name_l = name.lower()
+    for row in client.table(TABLE).select("name").execute().data or []:
+        if row.get("name", "").lower() == name_l:
+            return True
+    return False
+
+
 def main() -> None:
     if not is_supabase_enabled():
         print("Set SUPABASE_URL and SUPABASE_KEY first.")
@@ -34,6 +42,11 @@ def main() -> None:
     count = 0
 
     for _fid, data in index.get("registered_faces", {}).items():
+        name = data["name"]
+        if _name_exists(client, name):
+            print(f"  Skipped (already exists): {name}")
+            continue
+
         folder = data.get("directory", "").replace("\\", "/")
         local_dir = ROOT / folder
         if local_dir.exists():

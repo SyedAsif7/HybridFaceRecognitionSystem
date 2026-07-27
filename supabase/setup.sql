@@ -7,6 +7,7 @@ create table if not exists public.registered_faces (
   name text not null,
   num_images int not null default 1,
   avg_encoding jsonb not null,
+  sift_descriptors jsonb default '[]'::jsonb,
   image_folder text,
   created_at timestamptz not null default now()
 );
@@ -28,6 +29,10 @@ create policy "faces_update" on public.registered_faces for update using (true);
 insert into storage.buckets (id, name, public)
 values ('faces', 'faces', true)
 on conflict (id) do update set public = true;
+
+-- 5. Migration: add sift_descriptors if table already exists
+alter table public.registered_faces
+  add column if not exists sift_descriptors jsonb default '[]'::jsonb;
 
 -- 4. Storage policies — public read, anon upload/update for demo
 drop policy if exists "faces_storage_select" on storage.objects;

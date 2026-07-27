@@ -1,10 +1,10 @@
 """
 Streamlit UI — Hybrid Face Recognition
-Made by Syed Asif
 """
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 from datetime import datetime
@@ -14,13 +14,16 @@ import cv2
 import numpy as np
 import streamlit as st
 
-from src.db.face_store import image_url, is_supabase_enabled, load_faces, register_person
-from src.features.extractors import extract_research_fusion
-from src.preprocessing.processor import detect_and_align_face
+from src.db.face_store import (
+    image_url,
+    is_supabase_enabled,
+    recognize_face,
+    register_person,
+    safe_load_faces,
+)
 
 ROOT = Path(__file__).resolve().parent
 HISTORY_FILE = ROOT / "data" / "recognition_history.json"
-MATCH_THRESHOLD = 65.0
 
 st.set_page_config(
     page_title="Hybrid Face Recognition",
@@ -90,20 +93,61 @@ div.block-container {
   color: var(--mute);
 }
 .hero-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: none;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-top: 1.1rem;
+  margin-top: 1.25rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--line);
+}
+.stat-card {
+  background: linear-gradient(180deg, #f8fbfb 0%, #f3f8f6 100%);
+  border: 1px solid #c5ddd6;
+  border-radius: 10px;
+  padding: 0.85rem 0.95rem;
+  min-height: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.stat-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mute);
+  line-height: 1.3;
+}
+.stat-value {
+  margin: 0.35rem 0 0.15rem;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.stat-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--teal);
+  font-weight: 600;
+}
+.stat-card.feature .stat-value,
+.stat-card.storage .stat-value {
+  font-size: 1.05rem;
+}
+@media (max-width: 720px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .chip {
-  background: var(--teal-soft);
-  border: 1px solid #c5ddd6;
-  border-radius: 999px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--teal);
-  line-height: 1.2;
+  display: none;
 }
 
 .sec-title {
@@ -142,6 +186,7 @@ div.block-container {
   font-weight: 700;
   line-height: 1.2;
 }
+.result-name.not-found { color: var(--bad); }
 .result-line {
   margin: 0 0 0.35rem;
   font-size: 0.95rem;
@@ -191,65 +236,81 @@ div[data-testid="stImage"] img {
 )
 
 
-def confidence_level(pct: float) -> str:
-    if pct >= 80:
-        return "High"
-    if pct >= 50:
-        return "Medium"
-    return "Low"
-
-
-def recognize(image_bgr: np.ndarray) -> dict:
-    face = detect_and_align_face(image_bgr)
-    faces = load_faces().get("registered_faces", {})
-    if not faces:
-        return {
-            "label": "No faces registered",
-            "confidence": 0.0,
-            "level": "Low",
-            "found": False,
-            "aligned": face,
-            "detail": "Register at least one person first.",
-        }
-
-    query = extract_research_fusion(face)
-    best_name, best_id, best_score = None, None, -1e9
-    for _fid, data in faces.items():
-        stored = np.asarray(data["avg_encoding"], dtype=np.float64)
-        denom = np.linalg.norm(query) * np.linalg.norm(stored)
-        score = float(np.dot(query, stored) / denom) if denom > 0 else -1.0
-        if score > best_score:
-            best_score = score
-            best_name = data["name"]
-            best_id = data["id"]
-
-    confidence = (best_score + 1) / 2 * 100
-    if confidence < MATCH_THRESHOLD:
-        return {
-            "label": "Not Found",
-            "confidence": float(confidence),
-            "level": confidence_level(confidence),
-            "found": False,
-            "aligned": face,
-            "detail": f"Best score below {MATCH_THRESHOLD:.0f}% match threshold.",
-            "score": float(best_score),
-        }
-
-    return {
-        "label": best_name,
-        "id": best_id,
-        "confidence": float(confidence),
-        "level": confidence_level(confidence),
-        "found": True,
-        "aligned": face,
-        "detail": "Matched with research fusion (SIFT + HOG + Gabor).",
-        "score": float(best_score),
-    }
 
 
 def bytes_to_bgr(file_bytes: bytes) -> np.ndarray | None:
     arr = np.frombuffer(file_bytes, dtype=np.uint8)
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+
+def bytes_fingerprint(data: bytes) -> str:
+    return hashlib.md5(data).hexdigest()
+
+
+def apply_recognition(image_bgr: np.ndarray, *, history_source: str) -> dict | None:
+    try:
+        result = recognize_face(image_bgr)
+    except Exception as exc:
+        st.error(f"Recognition failed: {exc}")
+        return None
+
+    st.session_state["result"] = result
+    append_history(
+        {
+            "label": result["label"],
+            "confidence": f"{result['confidence']:.2f}%",
+            "confidence_level": result["level"],
+            "found": result["found"],
+            "timestamp": datetime.now().isoformat(),
+            "source": history_source,
+            "model_used": "Custom Face Database (Research Fusion)",
+        }
+    )
+    return result
+
+
+def render_recognition_result(result: dict) -> None:
+    aligned = (result["aligned"] * 255).astype(np.uint8)
+    cls = tone(result["found"], result["level"])
+    if not result["found"]:
+        st.warning(
+            f"**{html.escape(str(result['label']))}** — "
+            f"{html.escape(str(result.get('detail', 'This person is not enrolled in the gallery.')))}"
+        )
+    st.image(aligned, caption="Aligned face crop", use_container_width=True, clamp=True)
+    if result["found"]:
+        st.progress(min(1.0, max(0.0, float(result["confidence"]) / 100.0)))
+    name_cls = "" if result["found"] else " not-found"
+    st.markdown(
+        f"""
+        <div class="result-box">
+          <p class="result-name{name_cls}">{html.escape(str(result['label']))}</p>
+          <p class="result-line">
+            <span class="k">Status</span>
+            <span class="{cls}">{'Identified' if result['found'] else 'Not identified'}</span>
+          </p>
+          <p class="result-line">
+            <span class="k">Confidence</span>
+            <span class="{cls}">{result['confidence']:.1f}% · {html.escape(result['level'])}</span>
+          </p>
+          <p class="result-line"><span class="k">Method</span>SIFT keypoint matching</p>
+          <p class="result-line" style="color:var(--mute);margin-top:0.55rem;">
+            {html.escape(str(result.get('detail', '')))}
+          </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def format_gallery_images(person: dict) -> str:
+    n = int(person.get("num_images") or 0)
+    if n <= 0:
+        return "No images"
+    if n == 1:
+        return "1 image"
+    nums = ", ".join(str(i) for i in range(1, n + 1))
+    return f"{n} images · {nums}"
 
 
 def append_history(record: dict) -> None:
@@ -272,23 +333,41 @@ def tone(found: bool, level: str) -> str:
     return {"High": "ok", "Medium": "warn", "Low": "bad"}.get(level, "bad")
 
 
-faces_map = load_faces().get("registered_faces", {})
+faces_index, db_error = safe_load_faces()
+faces_map = faces_index.get("registered_faces", {})
 n_faces = len(faces_map)
 storage_label = "Supabase" if is_supabase_enabled() else "Local"
 
+if db_error:
+    st.error(db_error)
+
 # ── Header ────────────────────────────────────────────────
+enrolled_label = "person" if n_faces == 1 else "people"
+storage_hint = "Cloud database" if is_supabase_enabled() else "Saved on this device"
+
 st.markdown(
     f"""
     <div class="hero">
       <h1 class="hero-title">Hybrid Face Recognition</h1>
       <p class="hero-desc">
-        Upload a photo, align the face, fuse SIFT + HOG + Gabor features,
-        and match against your enrolled gallery.
+        Enroll faces, then recognize them with hybrid feature fusion against your secure gallery.
       </p>
-      <div class="hero-row">
-        <div class="chip">{n_faces} enrolled</div>
-        <div class="chip">{MATCH_THRESHOLD:.0f}% threshold</div>
-        <div class="chip">Storage · {storage_label}</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <p class="stat-label">Gallery</p>
+          <p class="stat-value">{n_faces}</p>
+          <p class="stat-hint">{enrolled_label} enrolled</p>
+        </div>
+        <div class="stat-card feature">
+          <p class="stat-label">Features</p>
+          <p class="stat-value">SIFT · HOG · Gabor</p>
+          <p class="stat-hint">Hybrid fusion method</p>
+        </div>
+        <div class="stat-card storage">
+          <p class="stat-label">Storage</p>
+          <p class="stat-value">{html.escape(storage_label)}</p>
+          <p class="stat-hint">{html.escape(storage_hint)}</p>
+        </div>
       </div>
     </div>
     """,
@@ -320,7 +399,7 @@ st.write("")  # breathing room
 if page == "Recognize":
     st.markdown(
         '<p class="sec-title">Recognize</p>'
-        '<p class="sec-help">Step 1: add a face photo. Step 2: run recognition. Step 3: see the match.</p>',
+        '<p class="sec-help">Upload a photo or use the camera — turn the camera on/off with the button, then recognition runs automatically.</p>',
         unsafe_allow_html=True,
     )
 
@@ -333,9 +412,13 @@ if page == "Recognize":
             ["Upload image", "Use camera"],
             horizontal=True,
             key="src",
+            on_change=lambda: st.session_state.update({"camera_on": False}),
         )
 
         image_bgr = None
+        go = False
+        camera_auto = False
+
         if source == "Upload image":
             up = st.file_uploader(
                 "Choose a clear face image",
@@ -345,65 +428,82 @@ if page == "Recognize":
             )
             if up is not None:
                 image_bgr = bytes_to_bgr(up.getvalue())
-                st.image(up.getvalue(), use_container_width=True)
-        else:
-            cam = st.camera_input("Take a photo", key="cam")
-            if cam is not None:
-                image_bgr = bytes_to_bgr(cam.getvalue())
+                if image_bgr is None:
+                    st.error("Image could not be read. Please upload a valid JPG, PNG, or WEBP file.")
+                else:
+                    st.image(up.getvalue(), use_container_width=True)
 
-        go = st.button(
-            "Run recognition",
-            type="primary",
-            use_container_width=True,
-            disabled=image_bgr is None,
-            key="go",
-        )
-        if image_bgr is None:
-            st.caption("Add a photo to enable recognition.")
+            go = st.button(
+                "Run recognition",
+                type="primary",
+                use_container_width=True,
+                disabled=image_bgr is None,
+                key="go",
+            )
+            if image_bgr is None:
+                st.caption("Add a photo to enable recognition.")
+        else:
+            if "camera_on" not in st.session_state:
+                st.session_state["camera_on"] = False
+
+            if st.session_state["camera_on"]:
+                if st.button(
+                    "Turn Camera Off",
+                    use_container_width=True,
+                    key="cam_off",
+                ):
+                    st.session_state["camera_on"] = False
+                    st.session_state.pop("last_cam_id", None)
+                    st.rerun()
+
+                cam = st.camera_input(
+                    "Live camera",
+                    key="cam",
+                    help="Recognition runs automatically when a face photo appears.",
+                )
+                if cam is not None:
+                    cam_bytes = cam.getvalue()
+                    image_bgr = bytes_to_bgr(cam_bytes)
+                    if image_bgr is None:
+                        st.error("Camera image could not be read. Please try again.")
+                    else:
+                        cam_id = bytes_fingerprint(cam_bytes)
+                        if st.session_state.get("last_cam_id") != cam_id:
+                            st.session_state["last_cam_id"] = cam_id
+                            camera_auto = True
+                st.caption("Camera is on. Recognition runs when a photo appears.")
+            else:
+                st.info("Camera is off.")
+                if st.button(
+                    "Turn Camera On",
+                    type="primary",
+                    use_container_width=True,
+                    key="cam_on",
+                ):
+                    st.session_state["camera_on"] = True
+                    st.rerun()
+                st.caption("Click **Turn Camera On** to start the camera.")
 
     with right:
         st.markdown('<p class="panel-title">2 · Match result</p>', unsafe_allow_html=True)
 
-        if go and image_bgr is not None:
+        if camera_auto and image_bgr is not None:
+            with st.spinner("Recognizing live camera image…"):
+                apply_recognition(image_bgr, history_source="streamlit-camera")
+        elif go and image_bgr is not None:
             with st.spinner("Aligning face and matching…"):
-                result = recognize(image_bgr)
-            st.session_state["result"] = result
-            append_history(
-                {
-                    "label": result["label"],
-                    "confidence": f"{result['confidence']:.2f}%",
-                    "confidence_level": result["level"],
-                    "found": result["found"],
-                    "timestamp": datetime.now().isoformat(),
-                    "source": "streamlit",
-                    "model_used": "Custom Face Database (Research Fusion)",
-                }
-            )
+                apply_recognition(image_bgr, history_source="streamlit")
 
         result = st.session_state.get("result")
         if not result:
-            st.info("Results show here after you run recognition.")
+            if source == "Use camera" and not st.session_state.get("camera_on"):
+                st.info("Turn the camera on to start recognition.")
+            elif source == "Use camera":
+                st.info("Look at the camera — the match result will appear here automatically.")
+            else:
+                st.info("Results show here after you run recognition.")
         else:
-            aligned = (result["aligned"] * 255).astype(np.uint8)
-            cls = tone(result["found"], result["level"])
-            st.image(aligned, caption="Aligned face crop", use_container_width=True, clamp=True)
-            st.progress(min(1.0, max(0.0, float(result["confidence"]) / 100.0)))
-            st.markdown(
-                f"""
-                <div class="result-box">
-                  <p class="result-name">{html.escape(str(result['label']))}</p>
-                  <p class="result-line">
-                    <span class="k">Confidence</span>
-                    <span class="{cls}">{result['confidence']:.1f}% · {html.escape(result['level'])}</span>
-                  </p>
-                  <p class="result-line"><span class="k">Method</span>SIFT + HOG + Gabor</p>
-                  <p class="result-line" style="color:var(--mute);margin-top:0.55rem;">
-                    {html.escape(str(result.get('detail', '')))}
-                  </p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            render_recognition_result(result)
 
 # ── Register ──────────────────────────────────────────────
 elif page == "Register":
@@ -456,14 +556,19 @@ elif page == "Register":
 
     saved = st.button("Save to gallery", type="primary", use_container_width=True, key="save")
     if saved:
-        with st.spinner("Building face encoding…"):
-            ok, msg = register_person(name, images)
-        if ok:
-            st.success(msg)
-            st.session_state.pop("result", None)
-            st.rerun()
+        if not name.strip():
+            st.error("Enter a person name before saving.")
+        elif not images:
+            st.error("Add at least one photo before saving.")
         else:
-            st.error(msg)
+            with st.spinner("Building face encoding…"):
+                ok, msg = register_person(name, images)
+            if ok:
+                st.success(msg)
+                st.session_state.pop("result", None)
+                st.rerun()
+            else:
+                st.error(msg)
 
     st.markdown(
         '<p class="foot">'
@@ -498,7 +603,6 @@ else:
                             st.image(thumb, use_container_width=True)
                         st.markdown(
                             f'<p class="person-name">{html.escape(str(person["name"]))}</p>'
-                            f'<p class="person-meta">ID {html.escape(str(person["id"]))} · '
-                            f'{int(person["num_images"])} image(s)</p>',
+                            f'<p class="person-meta">{html.escape(format_gallery_images(person))}</p>',
                             unsafe_allow_html=True,
                         )

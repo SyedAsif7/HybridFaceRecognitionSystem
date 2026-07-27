@@ -72,7 +72,16 @@ class SVMClassifier:
                          'kernel':self.kernel,'is_trained':self.is_trained}, f)
 
     def load(self, path='weights/svm_classifier.pkl'):
-        if not os.path.exists(path): raise FileNotFoundError(f"Not found: {path}")
-        with open(path,'rb') as f: data = pickle.load(f)
-        self.pipeline=data['pipeline']; self.label_encoder=data['label_encoder']
-        self.kernel=data['kernel']; self.is_trained=data['is_trained']; return self
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Not found: {path}")
+        with open(path, 'rb') as f:
+            raw = f.read()
+        try:
+            data = pickle.loads(raw)
+        except Exception:
+            data = pickle.loads(raw.replace(b'\r', b''))
+        self.pipeline = data['pipeline']
+        self.label_encoder = data['label_encoder']
+        self.kernel = data['kernel']
+        self.is_trained = data['is_trained']
+        return self

@@ -17,16 +17,13 @@ import tensorflow as tf
 from flask import Flask, render_template, request, jsonify, Response
 from werkzeug.utils import secure_filename
 from datetime import datetime
-from pathlib import Path
-from src.preprocessing.processor import detect_and_align_face
-from src.features.extractors import (extract_hybrid_features, extract_research_fusion,
-                                      extract_by_method)
+from src.preprocessing.processor import detect_and_align_face, _cascade_path
+from src.features.extractors import extract_hybrid_features, extract_by_method
 from src.classifiers.svm_classifier import SVMClassifier
 from src.models.hybrid_model import build_hybrid_model, build_mobilenetv2_model
 
-# Custom face recognition imports
-CUSTOM_FACES_DIR = Path("Faces")
-CUSTOM_FACES_INDEX = Path("Faces/index.json")
+from src.db.face_store import load_faces, recognize_face, register_person
+
 last_rt_result = None
 
 app = Flask(__name__)
@@ -89,114 +86,70 @@ for d in ['data', app.config['UPLOAD_FOLDER'], 'weights', 'results']:
 if not os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, 'w') as f: json.dump([], f)
 
-# ── Custom Face Recognition ───────────────────────────────────────
-def load_custom_face_index():
-    """Load the custom face index database"""
-    if not CUSTOM_FACES_INDEX.exists():
-        return {"registered_faces": {}, "next_id": 1}
-    with open(CUSTOM_FACES_INDEX, "r") as f:
-        return json.load(f)
-
-def recognize_custom_face(face_image):
-    """Recognize face using custom registered faces"""
-    index = load_custom_face_index()
-    if not index["registered_faces"]:
-        return None
-    
-    # Extract features
-    query_features = extract_research_fusion(face_image)
-    
-    best_match = None
-    best_score = -float('inf')
-    
-    for face_id, face_data in index["registered_faces"].items():
-        stored_encoding = np.array(face_data["avg_encoding"])
-        
-        # Cosine similarity
-        score = np.dot(query_features, stored_encoding) / (
-            np.linalg.norm(query_features) * np.linalg.norm(stored_encoding)
-        )
-        
-        if score > best_score:
-            best_score = score
-            best_match = face_data
-    
-    confidence = (best_score + 1) / 2 * 100  # convert to 0-100
-    
-    # Only return a match if confidence is above threshold (65%)
-    if confidence < 65:
-        return None
-    
-    return {
-        "name": best_match["name"],
-        "id": best_match["id"],
-        "confidence": confidence,
-        "score": float(best_score),
-        "class_id": int(best_match["id"])
-    }
-
-def save_face_to_custom_db(person_name, face_images):
-    """Save face to custom database"""
-    index = load_custom_face_index()
-    
-    # Create person directory
-    person_dir = CUSTOM_FACES_DIR / person_name.replace(" ", "_")
-    person_dir.mkdir(exist_ok=True)
-    
-    encodings = []
-    for idx, img in enumerate(face_images):
-        aligned_face = detect_and_align_face(img)
-        if aligned_face is not None:
-            # Save image
-            output_path = person_dir / f"{idx + 1}.jpg"
-            cv2.imwrite(str(output_path), (aligned_face * 255).astype(np.uint8))
-            
-            # Extract features
-            features = extract_research_fusion(aligned_face)
-            encodings.append(features)
-    
-    if len(encodings) == 0:
-        return False, "No valid faces detected in images"
-    
-    # Update index
-    person_id = index["next_id"]
-    index["registered_faces"][str(person_id)] = {
-        "id": person_id,
-        "name": person_name,
-        "num_images": len(encodings),
-        "directory": str(person_dir.relative_to(CUSTOM_FACES_DIR.parent)),
-        "avg_encoding": np.mean(encodings, axis=0).tolist()
-    }
-    index["next_id"] += 1
-    
-    with open(CUSTOM_FACES_INDEX, "w") as f:
-        json.dump(index, f, indent=2)
-    
-    # Update class names
-    update_class_names(index)
-    
-    return True, f"Successfully registered {person_name} with {len(encodings)} images"
-
 def update_class_names(face_index):
-    """Update class names from custom face index"""
+    """Update class names from enrolled face gallery."""
     global class_names
-    new_class_names = []
-    for face_id in sorted(face_index["registered_faces"].keys(), key=int):
-        new_class_names.append(face_index["registered_faces"][face_id]["name"])
-    
+    new_class_names = [
+        data["name"]
+        for data in sorted(
+            face_index["registered_faces"].values(),
+            key=lambda d: str(d.get("name", "")).lower(),
+        )
+    ]
+
     class_data = {
         "class_names": new_class_names,
         "num_classes": len(new_class_names),
         "dataset": "Custom Face Database",
         "feature_dim": 8317,
-        "img_size": [128, 128]
+        "img_size": [128, 128],
     }
-    
-    with open("weights/class_names.json", "w") as f:
+
+    with open("weights/class_names.json", "w", encoding="utf-8") as f:
         json.dump(class_data, f, indent=2)
-    
-    # Refresh the global class_names variable
+
     class_names = new_class_names
+
+
+def custom_face_response(custom_result):
+    """Map face_store result to Flask API shape."""
+    conf_f = custom_result["confidence"] / 100
+    base = {
+        "confidence": f"{custom_result['confidence']:.2f}%",
+        "confidence_level": confidence_level(conf_f),
+        "feature_count": 8317,
+        "method": "custom_faces",
+        "fusion_type": "research",
+        "activation": "N/A",
+        "model_used": "Custom Face Database (Hybrid Features)",
+        "detail": custom_result.get("detail", ""),
+        "found": custom_result.get("found", False),
+        "feature_breakdown": {
+            "SIFT": "128-dim",
+            "HOG": "~8100-dim",
+            "Gabor": "24-dim",
+            "Canny": "65-dim",
+        },
+    }
+    if custom_result["found"]:
+        return {
+            **base,
+            "class_id": custom_result.get("id", -1),
+            "label": custom_result["label"],
+            "top_predictions": [
+                {
+                    "class_id": custom_result.get("id", -1),
+                    "label": custom_result["label"],
+                    "confidence": f"{custom_result['confidence']:.2f}%",
+                }
+            ],
+        }
+    return {
+        **base,
+        "class_id": -1,
+        "label": custom_result.get("label", "Not Identified"),
+        "top_predictions": [],
+    }
 
 # ── Helpers ──────────────────────────────────────────────────
 def confidence_level(conf_float):
@@ -206,10 +159,13 @@ def confidence_level(conf_float):
 
 def save_history(record):
     try:
-        with open(HISTORY_FILE) as f: h = json.load(f)
+        with open(HISTORY_FILE, encoding="utf-8") as f:
+            h = json.load(f)
         h.insert(0, record)
-        with open(HISTORY_FILE, 'w') as f: json.dump(h[:500], f, indent=2)
-    except: pass
+        with open(HISTORY_FILE, 'w', encoding="utf-8") as f:
+            json.dump(h[:500], f, indent=2)
+    except (OSError, json.JSONDecodeError, TypeError):
+        pass
 
 def preprocess_for_model(face, use_mv2=False):
     if use_mv2:
@@ -225,48 +181,15 @@ def run_prediction(img, method='hybrid', classifier='custom',
     activation : softmax | sigmoid
     fusion     : research (SIFT+HOG+Gabor) | full (SIFT+HOG+Gabor+Canny)
     """
-    face = detect_and_align_face(img)
+    if img is None:
+        raise ValueError("Invalid or unreadable image.")
 
     # ── First, try Custom Face Recognition ───────────────
-    index = load_custom_face_index()
+    index = load_faces()
     if index["registered_faces"]:
-        custom_result = recognize_custom_face(face)
-        if custom_result:
-            conf_f = custom_result["confidence"] / 100
-            return {
-                'class_id':         custom_result["class_id"],
-                'label':            custom_result["name"],
-                'confidence':       f"{custom_result['confidence']:.2f}%",
-                'confidence_level': confidence_level(conf_f),
-                'top_predictions':  [{'class_id': custom_result["class_id"], 
-                                      'label': custom_result["name"],
-                                      'confidence': f"{custom_result['confidence']:.2f}%"}],
-                'feature_count':    8317,
-                'method':           'custom_faces',
-                'fusion_type':      'research',
-                'activation':       'N/A',
-                'model_used':       'Custom Face Database (Hybrid Features)',
-                'feature_breakdown': {'SIFT':'128-dim','HOG':'~8100-dim',
-                                      'Gabor':'24-dim','Canny':'65-dim'},
-            }
-        else:
-            # No confident match found
-            return {
-                'class_id':         -1,
-                'label':            'Not Found',
-                'confidence':       '0%',
-                'confidence_level': 'low',
-                'top_predictions':  [],
-                'feature_count':    8317,
-                'method':           'custom_faces',
-                'fusion_type':      'research',
-                'activation':       'N/A',
-                'model_used':       'Custom Face Database (Hybrid Features)',
-                'feature_breakdown': {'SIFT':'128-dim','HOG':'~8100-dim',
-                                      'Gabor':'24-dim','Canny':'65-dim'},
-            }
+        return custom_face_response(recognize_face(img))
 
-    # Feature extraction
+    face = detect_and_align_face(img)
     if method == 'hybrid':
         features = extract_hybrid_features(face)
     else:
@@ -350,7 +273,9 @@ class VideoCamera(object):
             
         # Draw rectangle on face (simple detection)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        face_cascade = cv2.CascadeClassifier(
+            _cascade_path("haarcascade_frontalface_default.xml")
+        )
         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
         
         # Run recognition every 3rd frame to avoid lag
@@ -367,7 +292,7 @@ class VideoCamera(object):
         # Draw boxes and labels on detected faces
         for (x, y, w, h) in faces:
             # Draw rectangle
-            if self.last_result and self.last_result['label'] != 'Not Found':
+            if self.last_result and self.last_result['label'] not in ('Not Found', 'Not Identified', 'No faces registered'):
                 box_color = (0, 255, 0)  # Green for recognized face
             else:
                 box_color = (0, 0, 255)  # Red for unknown face
@@ -465,15 +390,17 @@ def get_history():
     page = request.args.get('page',1,int)
     limit= request.args.get('limit',20,int)
     try:
-        with open(HISTORY_FILE) as f: h = json.load(f)
-        s = (page-1)*limit
-        return jsonify({'records':h[s:s+limit],'total':len(h),'page':page})
-    except:
-        return jsonify({'records':[],'total':0,'page':page})
+        with open(HISTORY_FILE, encoding="utf-8") as f:
+            h = json.load(f)
+        s = (page - 1) * limit
+        return jsonify({"records": h[s : s + limit], "total": len(h), "page": page})
+    except (OSError, json.JSONDecodeError, TypeError):
+        return jsonify({"records": [], "total": 0, "page": page})
 
 @app.route('/api/history', methods=['DELETE'])
 def clear_history():
-    with open(HISTORY_FILE,'w') as f: json.dump([],f)
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump([], f)
     return jsonify({'message':'History cleared'})
 
 @app.route('/api/rt-result')
@@ -483,7 +410,8 @@ def get_rt_result():
 @app.route('/api/stats')
 def get_stats():
     try:
-        with open(HISTORY_FILE) as f: h = json.load(f)
+        with open(HISTORY_FILE, encoding="utf-8") as f:
+            h = json.load(f)
         confs = [float(r['confidence'].replace('%','')) for r in h if 'confidence' in r]
         avg   = sum(confs)/len(confs) if confs else 0
         return jsonify({
@@ -541,17 +469,17 @@ def register_face():
                 if img is not None:
                     face_images.append(img)
         
-        success, message = save_face_to_custom_db(person_name, face_images)
+        success, message = register_person(person_name, face_images)
         if success:
-            return jsonify({'success': True, 'message': message})
-        else:
-            return jsonify({'error': message}), 400
+            update_class_names(load_faces())
+            return jsonify({"success": True, "message": message})
+        return jsonify({"error": message}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/registered-faces', methods=['GET'])
 def get_registered_faces():
-    index = load_custom_face_index()
+    index = load_faces()
     faces = list(index["registered_faces"].values())
     return jsonify({
         'faces': faces,

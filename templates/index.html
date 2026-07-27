@@ -938,12 +938,8 @@ async function pollRTResult() {
     if (result) {
       resultCard.style.display = 'block';
 
-      if (result.label === 'Not Found') {
-        document.getElementById('rtRecName').textContent = 'Not Found';
-        document.getElementById('rtRecName').style.color = 'var(--red)';
-        document.getElementById('rtRecBadge').innerHTML = '<span class="rbadge badge-low">Not Recognized</span>';
-        document.getElementById('rtRecConf').textContent = '0%';
-        document.getElementById('rtRecBar').style.width = '0%';
+      if (isUnrecognized(result.label)) {
+        showUnrecognizedResult('rt', result.detail || 'This face is not enrolled in the gallery.');
       } else {
         const conf = parseFloat(result.confidence);
         document.getElementById('rtRecName').textContent = result.label;
@@ -961,6 +957,20 @@ async function pollRTResult() {
 }
 
 // Helpers
+function isUnrecognized(label) {
+  return ['Not Found', 'Not Identified', 'No faces registered'].includes(label);
+}
+function showUnrecognizedResult(prefix, detail) {
+  document.getElementById(prefix + 'RecName').textContent = 'Not Identified';
+  document.getElementById(prefix + 'RecName').style.color = 'var(--red)';
+  document.getElementById(prefix + 'RecBadge').innerHTML = '<span class="rbadge badge-low">Not Identified</span>';
+  document.getElementById(prefix + 'RecConf').textContent = '0%';
+  document.getElementById(prefix + 'RecBar').style.width = '0%';
+  if (detail && document.getElementById(prefix + 'RecTopPreds')) {
+    document.getElementById(prefix + 'RecTopPreds').innerHTML =
+      `<div style="text-align:center;padding:10px;color:var(--text3);">${detail}</div>`;
+  }
+}
 function lvlBadge(l) {
   const c = l === 'High' ? 'badge-high' : l === 'Medium' ? 'badge-medium' : 'badge-low';
   return `<span class="rbadge ${c}">${l || '—'} Confidence</span>`;
@@ -999,15 +1009,9 @@ async function runRecognize() {
     document.getElementById('recEmpty').style.display = 'none';
     document.getElementById('recContent').style.display = 'block';
     
-    if (d.label === 'Not Found') {
-      // Handle Not Found case
-      document.getElementById('recName').textContent = 'Not Found';
-      document.getElementById('recName').style.color = 'var(--red)';
-      document.getElementById('recBadge').innerHTML = '<span class="rbadge badge-low">Not Recognized</span>';
-      document.getElementById('recConf').textContent = '0%';
-      document.getElementById('recBar').style.width = '0%';
-      document.getElementById('recTopPreds').innerHTML = '<div style="text-align:center;padding:10px;color:var(--text3);">No matching face found in the database</div>';
-      toast('Face not recognized', 'error');
+    if (isUnrecognized(d.label)) {
+      showUnrecognizedResult('rec', d.detail || 'This face is not enrolled in the gallery.');
+      toast(d.detail || 'Face not identified', 'error');
     } else {
       // Normal recognition case
       const conf = parseFloat(d.confidence);
@@ -1222,18 +1226,22 @@ async function loadRegisteredFaces() {
       return;
     }
     
-    list.innerHTML = data.faces.map(face => `
+    list.innerHTML = data.faces.map(face => {
+      const n = face.num_images || 0;
+      const imageLabel = n <= 0 ? 'No images'
+        : n === 1 ? '1 image'
+        : `${n} images · ${Array.from({length: n}, (_, i) => i + 1).join(', ')}`;
+      return `
       <div style="display:flex; align-items:center; gap:16px; padding:16px; background:var(--card); border-radius:12px; margin-bottom:12px; border:1px solid var(--border);">
         <div style="width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg, var(--accent), var(--accent2)); display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:bold;">
           ${face.name.charAt(0).toUpperCase()}
         </div>
         <div style="flex:1;">
           <div style="font-weight:600; font-size:16px;">${face.name}</div>
-          <div style="font-size:12px; color:var(--text3);">${face.num_images} image${face.num_images !== 1 ? 's' : ''}</div>
+          <div style="font-size:12px; color:var(--text3);">${imageLabel}</div>
         </div>
-        <div style="font-size:12px; color:var(--text3);">ID: ${face.id}</div>
       </div>
-    `).join('');
+    `}).join('');
   } catch (error) {
     console.error('Error loading registered faces:', error);
   }

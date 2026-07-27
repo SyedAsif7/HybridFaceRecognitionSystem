@@ -53,7 +53,7 @@ def load_sheffield(root='data/Sheffield', size=(128,128)):
         spath = os.path.join(root, sid)
         if not os.path.isdir(spath): continue
         try: label = int(sid) - 1
-        except: continue
+        except ValueError: continue
         for fn in sorted(os.listdir(spath)):
             fp = os.path.join(spath, fn)
             img = cv2.imread(fp)
