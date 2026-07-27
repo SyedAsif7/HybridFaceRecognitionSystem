@@ -1,12 +1,5 @@
 # Hybrid Face Recognition System
 
-**Made by [Syed Asif](https://www.linkedin.com/in/the-syed-asif)** · [GitHub](https://github.com/SyedAsif7)
-
-**Based on:** Panchalwar Mam's Implementation Paper  
-*"Implementation of Hybrid Deep Learning-Based Face Recognition Using SIFT-CNN Integration"*
-
----
-
 ## System Architecture
 
 ```
@@ -139,8 +132,3 @@ Deploy on [Streamlit Community Cloud](https://share.streamlit.io):
 | High   | Confidence ≥ 80% |
 | Medium | 50% ≤ Conf < 80% |
 | Low    | Confidence < 50% |
-
----
-
-*All proposed enhancements are subject to Mam's guidance and approval.*
-*Implementation faithful to: Panchalwar Mam's published methodology.*
