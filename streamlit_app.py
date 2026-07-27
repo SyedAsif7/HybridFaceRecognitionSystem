@@ -14,12 +14,11 @@ import cv2
 import numpy as np
 import streamlit as st
 
+from src.db.face_store import image_url, is_supabase_enabled, load_faces, register_person
 from src.features.extractors import extract_research_fusion
 from src.preprocessing.processor import detect_and_align_face
 
 ROOT = Path(__file__).resolve().parent
-FACES_DIR = ROOT / "Faces"
-FACES_INDEX = FACES_DIR / "index.json"
 HISTORY_FILE = ROOT / "data" / "recognition_history.json"
 MATCH_THRESHOLD = 65.0
 
@@ -83,18 +82,6 @@ div.block-container {
   line-height: 1.2;
   color: var(--ink);
 }
-.hero-by {
-  margin: 0.55rem 0 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--mute);
-}
-.hero-by a {
-  color: var(--teal);
-  font-weight: 700;
-  text-decoration: none;
-}
-.hero-by a:hover { text-decoration: underline; }
 .hero-desc {
   margin: 0.75rem 0 0;
   max-width: 40rem;
@@ -212,27 +199,9 @@ def confidence_level(pct: float) -> str:
     return "Low"
 
 
-def load_face_index() -> dict:
-    if not FACES_INDEX.exists():
-        return {"registered_faces": {}, "next_id": 1}
-    with open(FACES_INDEX, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def save_face_index(index: dict) -> None:
-    FACES_DIR.mkdir(parents=True, exist_ok=True)
-    with open(FACES_INDEX, "w", encoding="utf-8") as f:
-        json.dump(index, f, indent=2)
-
-
-def bytes_to_bgr(file_bytes: bytes) -> np.ndarray | None:
-    arr = np.frombuffer(file_bytes, dtype=np.uint8)
-    return cv2.imdecode(arr, cv2.IMREAD_COLOR)
-
-
 def recognize(image_bgr: np.ndarray) -> dict:
     face = detect_and_align_face(image_bgr)
-    faces = load_face_index().get("registered_faces", {})
+    faces = load_faces().get("registered_faces", {})
     if not faces:
         return {
             "label": "No faces registered",
@@ -278,51 +247,9 @@ def recognize(image_bgr: np.ndarray) -> dict:
     }
 
 
-def register_person(name: str, images_bgr: list[np.ndarray]) -> tuple[bool, str]:
-    name = name.strip()
-    if not name:
-        return False, "Enter a person name."
-    if not images_bgr:
-        return False, "Add at least one image."
-
-    index = load_face_index()
-    person_dir = FACES_DIR / name.replace(" ", "_")
-    person_dir.mkdir(parents=True, exist_ok=True)
-
-    encodings = []
-    for idx, img in enumerate(images_bgr):
-        aligned = detect_and_align_face(img)
-        if aligned is None:
-            continue
-        cv2.imwrite(str(person_dir / f"{idx + 1}.jpg"), (aligned * 255).astype(np.uint8))
-        encodings.append(extract_research_fusion(aligned))
-
-    if not encodings:
-        return False, "No valid faces detected in the uploaded images."
-
-    existing_id = None
-    for fid, data in index["registered_faces"].items():
-        if data["name"].lower() == name.lower():
-            existing_id = fid
-            break
-
-    if existing_id is None:
-        person_id = index.get("next_id", 1)
-        index["next_id"] = person_id + 1
-        key = str(person_id)
-    else:
-        person_id = index["registered_faces"][existing_id]["id"]
-        key = existing_id
-
-    index["registered_faces"][key] = {
-        "id": person_id,
-        "name": name,
-        "num_images": len(encodings),
-        "directory": str(person_dir.relative_to(ROOT)).replace("\\", "/"),
-        "avg_encoding": np.mean(encodings, axis=0).tolist(),
-    }
-    save_face_index(index)
-    return True, f"Registered {name} with {len(encodings)} image(s)."
+def bytes_to_bgr(file_bytes: bytes) -> np.ndarray | None:
+    arr = np.frombuffer(file_bytes, dtype=np.uint8)
+    return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
 
 def append_history(record: dict) -> None:
@@ -345,20 +272,15 @@ def tone(found: bool, level: str) -> str:
     return {"High": "ok", "Medium": "warn", "Low": "bad"}.get(level, "bad")
 
 
-faces_map = load_face_index().get("registered_faces", {})
+faces_map = load_faces().get("registered_faces", {})
 n_faces = len(faces_map)
+storage_label = "Supabase" if is_supabase_enabled() else "Local"
 
 # ── Header ────────────────────────────────────────────────
 st.markdown(
     f"""
     <div class="hero">
       <h1 class="hero-title">Hybrid Face Recognition</h1>
-      <p class="hero-by">
-        Made by <strong>Syed Asif</strong> ·
-        <a href="https://www.linkedin.com/in/the-syed-asif" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-        ·
-        <a href="https://github.com/SyedAsif7" target="_blank" rel="noopener noreferrer">GitHub</a>
-      </p>
       <p class="hero-desc">
         Upload a photo, align the face, fuse SIFT + HOG + Gabor features,
         and match against your enrolled gallery.
@@ -366,7 +288,7 @@ st.markdown(
       <div class="hero-row">
         <div class="chip">{n_faces} enrolled</div>
         <div class="chip">{MATCH_THRESHOLD:.0f}% threshold</div>
-        <div class="chip">SIFT · HOG · Gabor</div>
+        <div class="chip">Storage · {storage_label}</div>
       </div>
     </div>
     """,
@@ -544,8 +466,13 @@ elif page == "Register":
             st.error(msg)
 
     st.markdown(
-        '<p class="foot">Tip: on Streamlit Cloud, enrollments may reset when the app sleeps. '
-        "Commit updated <code>Faces/</code> files to GitHub to keep them permanently.</p>",
+        '<p class="foot">'
+        + (
+            "Faces are saved permanently in Supabase."
+            if is_supabase_enabled()
+            else "Tip: add Supabase secrets to keep enrollments on Streamlit Cloud."
+        )
+        + "</p>",
         unsafe_allow_html=True,
     )
 
@@ -560,16 +487,15 @@ else:
     if not faces_map:
         st.warning("No faces enrolled yet. Go to Register to add the first person.")
     else:
-        people = [faces_map[k] for k in sorted(faces_map.keys(), key=lambda x: int(x))]
+        people = sorted(faces_map.values(), key=lambda p: str(p.get("name", "")).lower())
         for start in range(0, len(people), 3):
             cols = st.columns(3, gap="medium")
             for col, person in zip(cols, people[start : start + 3]):
-                folder = ROOT / person.get("directory", "")
-                photos = sorted(folder.glob("*.jpg")) if folder.exists() else []
                 with col:
                     with st.container(border=True):
-                        if photos:
-                            st.image(str(photos[0]), use_container_width=True)
+                        thumb = image_url(person)
+                        if thumb:
+                            st.image(thumb, use_container_width=True)
                         st.markdown(
                             f'<p class="person-name">{html.escape(str(person["name"]))}</p>'
                             f'<p class="person-meta">ID {html.escape(str(person["id"]))} · '

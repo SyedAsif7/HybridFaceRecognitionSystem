@@ -22,3 +22,7 @@ static/uploads/*
 # IDEs
 .vscode/
 .idea/
+
+# Secrets
+.streamlit/secrets.toml
+.env
