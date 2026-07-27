@@ -418,7 +418,7 @@ elif page == "Register":
         st.markdown('<p class="panel-title">Person details</p>', unsafe_allow_html=True)
         name = st.text_input(
             "Full name",
-            placeholder="e.g. Alex Lacamoire",
+            placeholder="e.g. Syed Asif",
             key="name",
             help="This name appears in recognition results.",
         )
